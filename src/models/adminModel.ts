@@ -10,10 +10,12 @@ const AdminSchema: Schema = new Schema<IAdmin>(
     email: {
       type: String,
       required: true,
+      unique: true,
     },
     username: {
       type: String,
       required: true,
+      unique: true,
     },
     password: {
       type: String,
@@ -44,8 +46,6 @@ const AdminSchema: Schema = new Schema<IAdmin>(
   },
   { timestamps: true },
 );
-
-AdminSchema.index({ name: 1, location: 1 }, { unique: true });
 
 const Admin: Model<IAdmin> = mongoose.model<IAdmin>('Admin', AdminSchema);
 

@@ -21,13 +21,10 @@ const createInstaller = expressAsyncHandler(
       );
     }
 
-    const installerExists = await Installer.findOne({
-      installerId,
-      deleted: false,
-    });
+    const installerExists = await Installer.findOne({ installerId });
     if (installerExists) {
       res.status(400);
-      throw new Error('El instalador ya ha sido registrado');
+      throw new Error('Ya existe un instalador registrado con ese id');
     }
 
     const salt: string = await genSalt(10);
@@ -50,6 +47,7 @@ const createInstaller = expressAsyncHandler(
       message: 'Instalador registrado exitosamente',
       error: false,
       installer: {
+        id: newInstaller._id,
         installerId: newInstaller.installerId,
         storeId: newInstaller.storeId,
         name: newInstaller.name,
@@ -88,6 +86,7 @@ const updateInstaller = expressAsyncHandler(
     res.status(200).json({
       error: false,
       installer: {
+        id: installer._id,
         installerId: installer.installerId,
         storeId: installer.storeId,
         name: installer.name,
@@ -102,9 +101,9 @@ const updateInstaller = expressAsyncHandler(
 
 const deleteInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { installerId }: { installerId: number } = req.body;
+    const { id }: { id: string } = req.body;
     const deletedInstaller = await Installer.findOneAndUpdate(
-      { installerId },
+      { _id: id },
       { deleted: true },
       { new: true },
     );
@@ -115,6 +114,7 @@ const deleteInstaller = expressAsyncHandler(
     res.status(200).json({
       message: 'Instalador borrado correctamente',
       installer: {
+        id: deletedInstaller._id,
         installerId: deletedInstaller.installerId,
         name: deletedInstaller.name,
         email: deletedInstaller.email,
