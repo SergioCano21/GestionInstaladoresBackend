@@ -159,7 +159,7 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
         res.status(400);
         throw new Error('No se encontró tienda para este administrador');
       }
-      adminQuery = { _id: admin.storeId, deleted: false };
+      adminQuery.storeId = admin.storeId;
       break;
     default:
       res.status(400);
