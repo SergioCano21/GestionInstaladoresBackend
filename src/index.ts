@@ -2,6 +2,9 @@ import express, { Express } from 'express';
 import dotenv from 'dotenv';
 import errorHandler from './middlewares/errorMiddleware';
 import connectDB from './config/db';
+import routerAdmin from './routes/adminRoutes';
+import routerStore from './routes/storeRoutes';
+import routerInstaller from './routes/installerRoutes';
 
 dotenv.config();
 
@@ -12,6 +15,10 @@ connectDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+app.use('/api/admin', routerAdmin);
+app.use('/api/installer', routerInstaller);
+app.use('/api/store', routerStore);
 
 app.use(errorHandler);
 
