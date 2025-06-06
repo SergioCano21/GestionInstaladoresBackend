@@ -1,5 +1,5 @@
 import express from 'express';
-import { protect } from '../middlewares/authenticationMiddleware';
+import { isAdmin, protect } from '../middlewares/authenticationMiddleware';
 import {
   createInstaller,
   deleteInstaller,
@@ -10,10 +10,10 @@ import {
 
 const routerInstaller = express.Router();
 
-routerInstaller.get('/', protect, findInstallers);
-routerInstaller.post('/', protect, createInstaller);
-routerInstaller.put('/', protect, updateInstaller);
-routerInstaller.delete('/', protect, deleteInstaller);
+routerInstaller.get('/', protect, isAdmin, findInstallers);
+routerInstaller.post('/', protect, isAdmin, createInstaller);
+routerInstaller.put('/', protect, isAdmin, updateInstaller);
+routerInstaller.delete('/', protect, isAdmin, deleteInstaller);
 routerInstaller.post('/login', login);
 
 export default routerInstaller;

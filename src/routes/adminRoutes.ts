@@ -1,5 +1,5 @@
 import express, { Router } from 'express';
-import { protect } from '../middlewares/authenticationMiddleware';
+import { isAdmin, protect } from '../middlewares/authenticationMiddleware';
 import {
   login,
   createAdmin,
@@ -10,10 +10,10 @@ import {
 
 const routerAdmin: Router = express.Router();
 
-routerAdmin.get('/', protect, findAdmins);
-routerAdmin.post('/', protect, createAdmin);
-routerAdmin.put('/', protect, updateAdmin);
-routerAdmin.delete('/', protect, deleteAdmin);
+routerAdmin.get('/', protect, isAdmin, findAdmins);
+routerAdmin.post('/', protect, isAdmin, createAdmin);
+routerAdmin.put('/', protect, isAdmin, updateAdmin);
+routerAdmin.delete('/', protect, isAdmin, deleteAdmin);
 routerAdmin.post('/login', login);
 
 export default routerAdmin;

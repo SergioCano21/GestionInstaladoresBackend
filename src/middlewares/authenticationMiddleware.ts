@@ -18,23 +18,20 @@ const protect = expressAsyncHandler(
         isAdmin?: boolean;
       };
 
-      let exists;
       if (decoded.isAdmin) {
-        exists = await Admin.findById(decoded.id);
-        if (!exists) {
+        const admin = await Admin.findById(decoded.id);
+        if (!admin) {
           res.status(400);
-          throw new Error('No se encontró admin con ese token');
+          throw new Error('No se encontró administrador con ese token');
         }
-        req.admin = exists;
+        req.admin = admin;
       } else {
-        exists = await Installer.findById(decoded.id);
+        const installer = await Installer.findById(decoded.id);
+        if (!installer) {
+          res.status(400);
+          throw new Error('No se encontró instalador con ese token');
+        }
       }
-
-      if (!exists) {
-        res.status(401);
-        throw new Error('Error de autenticación');
-      }
-
       next();
     } catch (error) {
       res.status(401);
@@ -43,4 +40,13 @@ const protect = expressAsyncHandler(
   },
 );
 
-export { protect };
+const isAdmin = expressAsyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.admin) {
+      res.status(401);
+      throw new Error('Acceso no autorizado');
+    }
+    next();
+  },
+);
+export { protect, isAdmin };
