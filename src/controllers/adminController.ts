@@ -1,8 +1,42 @@
 import { Request, Response } from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import Admin from '../models/adminModel';
-import { genSalt, hash } from 'bcryptjs';
+import { compare, genSalt, hash } from 'bcryptjs';
 import { IAdmin } from '../types/models';
+import jwt from 'jsonwebtoken';
+
+const login = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { username, password }: { username: string; password: string } =
+    req.body;
+
+  if (!username || !password) {
+    res.status(400);
+    throw new Error('Faltan datos por ingresar');
+  }
+
+  const admin = await Admin.findOne({ username });
+
+  if (admin && (await compare(password, admin.password))) {
+    const newToken = jwt.sign(
+      { isAdmin: true, id: admin._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1h' },
+    );
+    res
+      .status(200)
+      .json({
+        message: 'Login realizado con éxito',
+        error: false,
+        token: newToken,
+      })
+      .cookie('access_token', newToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 1000 * 60 * 60,
+      });
+  }
+});
 
 const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
   let { username, password, name, email, storeId, role, city, state, country } =
@@ -175,4 +209,4 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export { createAdmin, deleteAdmin, updateAdmin, findAdmins };
+export { createAdmin, deleteAdmin, updateAdmin, findAdmins, login };
