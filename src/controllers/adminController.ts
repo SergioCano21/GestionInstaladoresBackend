@@ -170,8 +170,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id }: { id: string } = req.body;
-  const admin = await Admin.findById(id);
+  const admin = req.admin;
   if (!admin) {
     res.status(403);
     throw new Error('Acceso no autorizado');

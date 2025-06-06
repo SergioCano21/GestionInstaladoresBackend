@@ -4,7 +4,6 @@ import { compare, genSalt, hash } from 'bcryptjs';
 import Installer from '../models/installerModel';
 import { IStore } from '../types/models';
 import Store from '../models/storeModel';
-import Admin from '../models/adminModel';
 import jwt from 'jsonwebtoken';
 
 const login = expressAsyncHandler(async (req: Request, res: Response) => {
@@ -163,8 +162,7 @@ const deleteInstaller = expressAsyncHandler(
 
 const findInstallers = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id }: { id: string } = req.body;
-    const admin = await Admin.findById(id);
+    const admin = req.admin;
     if (!admin) {
       res.status(403);
       throw new Error('Acceso no autorizado');

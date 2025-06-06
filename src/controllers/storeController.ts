@@ -3,7 +3,6 @@ import { Request, Response } from 'express';
 import Store from '../models/storeModel';
 import { IStore } from '../types/models';
 import { HydratedDocument } from 'mongoose';
-import Admin from '../models/adminModel';
 
 const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const {
@@ -58,8 +57,7 @@ const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
 
 const findByAccess = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id }: { id: string } = req.body;
-    const admin = await Admin.findById(id);
+    const admin = req.admin;
 
     if (!admin) {
       res.status(403);

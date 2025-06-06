@@ -21,6 +21,11 @@ const protect = expressAsyncHandler(
       let exists;
       if (decoded.isAdmin) {
         exists = await Admin.findById(decoded.id);
+        if (!exists) {
+          res.status(400);
+          throw new Error('No se encontró admin con ese token');
+        }
+        req.admin = exists;
       } else {
         exists = await Installer.findById(decoded.id);
       }
