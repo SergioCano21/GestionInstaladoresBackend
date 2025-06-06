@@ -1,10 +1,44 @@
 import expressAsyncHandler from 'express-async-handler';
 import { Request, Response } from 'express';
-import { genSalt, hash } from 'bcryptjs';
+import { compare, genSalt, hash } from 'bcryptjs';
 import Installer from '../models/installerModel';
 import { IStore } from '../types/models';
 import Store from '../models/storeModel';
 import Admin from '../models/adminModel';
+import jwt from 'jsonwebtoken';
+
+const login = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { installerId, password }: { installerId: number; password: string } =
+    req.body;
+
+  if (!installerId || !password) {
+    res.status(400);
+    throw new Error('Faltan datos por ingresar');
+  }
+
+  const installer = await Installer.findOne({ installerId });
+
+  if (installer && (await compare(password, installer.password))) {
+    const newToken = jwt.sign(
+      { isAdmin: false, id: installer._id },
+      process.env.JWT_SECRET!,
+      { expiresIn: '1h' },
+    );
+    res
+      .status(200)
+      .json({
+        message: 'Login realizado con éxito',
+        error: false,
+        token: newToken,
+      })
+      .cookie('access_token', newToken, {
+        httpOnly: true,
+        sameSite: 'none',
+        secure: true,
+        maxAge: 1000 * 60 * 60,
+      });
+  }
+});
 
 const createInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -175,4 +209,10 @@ const findInstallers = expressAsyncHandler(
   },
 );
 
-export { createInstaller, updateInstaller, deleteInstaller, findInstallers };
+export {
+  createInstaller,
+  updateInstaller,
+  deleteInstaller,
+  findInstallers,
+  login,
+};
