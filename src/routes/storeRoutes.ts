@@ -1,5 +1,9 @@
 import express from 'express';
-import { isAdmin, protect } from '../middlewares/authenticationMiddleware';
+import {
+  isAdmin,
+  isRoleDistrictOrNational,
+  protect,
+} from '../middlewares/authenticationMiddleware';
 import {
   createStore,
   deleteStore,
@@ -10,8 +14,14 @@ import {
 const routerStore = express.Router();
 
 routerStore.get('/', protect, isAdmin, findByAccess);
-routerStore.post('/', protect, isAdmin, createStore);
-routerStore.put('/', protect, isAdmin, updateStore);
-routerStore.delete('/', protect, isAdmin, deleteStore);
+routerStore.post('/', protect, isAdmin, isRoleDistrictOrNational, createStore);
+routerStore.put('/', protect, isAdmin, isRoleDistrictOrNational, updateStore);
+routerStore.delete(
+  '/',
+  protect,
+  isAdmin,
+  isRoleDistrictOrNational,
+  deleteStore,
+);
 
 export default routerStore;

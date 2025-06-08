@@ -1,5 +1,9 @@
 import express from 'express';
-import { isAdmin, protect } from '../middlewares/authenticationMiddleware';
+import {
+  isAdmin,
+  isRoleLocal,
+  protect,
+} from '../middlewares/authenticationMiddleware';
 import {
   createInstaller,
   deleteInstaller,
@@ -11,9 +15,9 @@ import {
 const routerInstaller = express.Router();
 
 routerInstaller.get('/', protect, isAdmin, findInstallers);
-routerInstaller.post('/', protect, isAdmin, createInstaller);
-routerInstaller.put('/', protect, isAdmin, updateInstaller);
-routerInstaller.delete('/', protect, isAdmin, deleteInstaller);
+routerInstaller.post('/', protect, isAdmin, isRoleLocal, createInstaller);
+routerInstaller.put('/', protect, isAdmin, isRoleLocal, updateInstaller);
+routerInstaller.delete('/', protect, isAdmin, isRoleLocal, deleteInstaller);
 routerInstaller.post('/login', login);
 
 export default routerInstaller;

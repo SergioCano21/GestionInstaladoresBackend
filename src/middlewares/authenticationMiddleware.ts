@@ -52,4 +52,29 @@ const isAdmin = expressAsyncHandler(
     next();
   },
 );
-export { protect, isAdmin };
+
+const isRoleLocal = expressAsyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.admin?.role != 'local') {
+      res.status(401);
+      throw new Error(
+        'Solo administradores con rol local pueden realizar modificaciones',
+      );
+    }
+    next();
+  },
+);
+
+const isRoleDistrictOrNational = expressAsyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.admin?.role == 'local') {
+      res.status(401);
+      throw new Error(
+        'Solo administradores con rol distrito o nacional pueden realizar modificaciones',
+      );
+    }
+    next();
+  },
+);
+
+export { protect, isAdmin, isRoleLocal, isRoleDistrictOrNational };
