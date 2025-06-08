@@ -20,8 +20,7 @@ export interface IAdmin {
   username: string;
   password: string;
   storeId?: Types.ObjectId;
-  city?: string;
-  state?: string;
+  district?: string;
   country?: string;
   deleted: boolean;
 }

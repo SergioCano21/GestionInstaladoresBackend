@@ -198,11 +198,8 @@ const findInstallers = expressAsyncHandler(
       case 'national':
         storeQuery.country = admin.country ?? '';
         break;
-      case 'state':
-        storeQuery.state = admin.state ?? '';
-        break;
-      case 'city':
-        storeQuery.city = admin.city ?? '';
+      case 'district':
+        storeQuery.district = admin.district ?? '';
         break;
       case 'local':
         if (!admin.storeId) {

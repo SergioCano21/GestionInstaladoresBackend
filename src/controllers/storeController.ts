@@ -7,27 +7,39 @@ import { HydratedDocument } from 'mongoose';
 const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const {
     name,
+    numStore,
+    district,
     city,
     state,
     country,
-  }: { name: string; city: string; state: string; country: string } = req.body;
+  }: {
+    name: string;
+    numStore: number;
+    district: string;
+    city: string;
+    state: string;
+    country: string;
+  } = req.body;
 
-  if (!name || !city || !state || !country) {
+  if (!name || !city || !state || !country || !numStore || !district) {
     res.status(400);
     throw new Error('Faltan datos de la tienda');
   }
 
-  const storeExists = await Store.findOne({
-    name,
-    city,
-    state,
-  });
+  const storeExists = await Store.findOne({ numStore });
   if (storeExists) {
     res.status(400);
-    throw new Error('Ya existe una tienda con las mismas características');
+    throw new Error('Ya existe una tienda con el mismo numero de tienda');
   }
 
-  const newStore = await Store.create({ name, city, state, country });
+  const newStore = await Store.create({
+    name,
+    numStore,
+    district,
+    city,
+    state,
+    country,
+  });
 
   res.status(201).json({
     message: 'Tienda creada correctamente',
@@ -73,24 +85,13 @@ const findByAccess = expressAsyncHandler(
 
     switch (admin.role) {
       case 'national':
-        query.country = admin.country;
+        query.country = admin.country ?? '';
         break;
-      case 'state':
-        query.state = admin.state;
-        break;
-      case 'city':
-        query.city = admin.city;
+      case 'district':
+        query.district = admin.district ?? '';
         break;
       case 'local':
-        const localStore = await Store.findOne({
-          _id: admin.storeId,
-          deleted: false,
-        });
-        if (!localStore) {
-          res.status(404);
-          throw new Error('No se encontró la tienda');
-        }
-        res.status(200).json({ store: localStore, error: false });
+        query._id = admin.storeId;
         break;
       default:
         res.status(400);
@@ -109,7 +110,7 @@ const findByAccess = expressAsyncHandler(
 );
 
 const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id, name, city, state, country } = req.body;
+  const { id, name, numStore, district, city, state, country } = req.body;
 
   const store = await Store.findOne({ _id: id, deleted: false });
 
@@ -119,27 +120,23 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
   }
 
   store.name = name || store.name;
+  store.numStore = numStore || store.numStore;
+  store.district = district || store.district;
   store.city = city || store.city;
   store.state = state || store.state;
   store.country = country || store.country;
 
-  const query = {
-    name: store.name,
-    city: store.city,
-    state: store.state,
-  };
-
-  const exists = await Store.findOne(query);
+  const exists = await Store.findOne({ numStore: store.numStore });
 
   if (exists && store._id.toString() != exists._id.toString()) {
     res.status(400);
-    throw new Error('Ya existe una tienda con las mismas características');
+    throw new Error('Ya existe una tienda con ese numero de tienda');
   }
 
   const updatedStore: HydratedDocument<IStore> = await store.save();
 
   res.status(200).json({
-    updatedStore,
+    store: updatedStore,
     error: false,
   });
 });

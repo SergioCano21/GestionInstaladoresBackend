@@ -49,7 +49,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
-  let { username, password, name, email, storeId, role, city, state, country } =
+  let { username, password, name, email, storeId, role, district, country } =
     req.body;
   if (!username || !password || !name || !email || !role) {
     res.status(400);
@@ -60,6 +60,20 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     res.status(400);
     throw new Error(
       'Falta agregar tienda a la que se está registrando el administrador',
+    );
+  }
+
+  if (role == 'district' && !district) {
+    res.status(400);
+    throw new Error(
+      'Falta agregar el distrito al que se está registrando el administrador',
+    );
+  }
+
+  if (role == 'national' && !country) {
+    res.status(400);
+    throw new Error(
+      'Falta agregar el país al que se está registrando el administrador',
     );
   }
 
@@ -82,8 +96,7 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     email,
     role,
     ...(storeId && { storeId }),
-    ...(city && { city }),
-    ...(state && { state }),
+    ...(district && { district }),
     ...(country && { country }),
   });
 
@@ -97,8 +110,7 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
       email: newAdmin.email,
       role: newAdmin.role,
       ...(newAdmin.storeId && { storeId: newAdmin.storeId }),
-      ...(newAdmin.city && { city: newAdmin.city }),
-      ...(newAdmin.state && { state: newAdmin.state }),
+      ...(newAdmin.district && { state: newAdmin.district }),
       ...(newAdmin.country && { country: newAdmin.country }),
     },
   });
@@ -136,10 +148,10 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     password,
     storeId,
     role,
-    city,
-    state,
+    district,
     country,
   } = req.body;
+
   const admin = await Admin.findOne({ _id: id, deleted: false });
   if (!admin) {
     res.status(400);
@@ -167,9 +179,23 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
   }
 
   if (storeId != null) admin.storeId = storeId;
-  if (city != null) admin.city = city;
-  if (state != null) admin.state = state;
+  if (district != null) admin.district = district;
   if (country != null) admin.country = country;
+
+  if (admin.role == 'national' && !admin.country) {
+    res.status(400);
+    throw new Error('Falta agregar país para cambiar de rol');
+  }
+
+  if (admin.role == 'district' && !admin.district) {
+    res.status(400);
+    throw new Error('Falta agregar distrito para cambiar de rol');
+  }
+
+  if (admin.role == 'local' && !admin.storeId) {
+    res.status(400);
+    throw new Error('Falta agregar tienda para cambiar de rol');
+  }
 
   if (password) {
     const salt: string = await genSalt(10);
@@ -188,8 +214,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
       username: admin.username,
       role: admin.role,
       ...(admin.storeId && { storeId: admin.storeId }),
-      ...(admin.city && { city: admin.city }),
-      ...(admin.state && { state: admin.state }),
+      ...(admin.district && { city: admin.district }),
       ...(admin.country && { country: admin.country }),
     },
     message: 'Administrador actualizado correctamente',
@@ -209,11 +234,8 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
     case 'national':
       adminQuery.country = admin.country ?? '';
       break;
-    case 'state':
-      adminQuery.state = admin.state ?? '';
-      break;
-    case 'city':
-      adminQuery.city = admin.city ?? '';
+    case 'district':
+      adminQuery.district = admin.district ?? '';
       break;
     case 'local':
       if (!admin.storeId) {

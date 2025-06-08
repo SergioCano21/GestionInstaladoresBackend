@@ -30,10 +30,7 @@ const AdminSchema: Schema = new Schema<IAdmin>(
       enum: ['local', 'district', 'national'],
       required: true,
     },
-    city: {
-      type: String,
-    },
-    state: {
+    district: {
       type: String,
     },
     country: {
