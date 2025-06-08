@@ -112,10 +112,27 @@ const updateInstaller = expressAsyncHandler(
       res.status(400);
       throw new Error('No se encontró al instalador');
     }
-    installer.installerId = installerId || installer.installerId;
+
+    if (installerId) {
+      const idInUse = await Installer.findOne({ installerId });
+      if (idInUse) {
+        res.status(400);
+        throw new Error('Ya existe un instalador con ese id');
+      }
+      installer.installerId = installerId;
+    }
+
+    if (email) {
+      const emailInUse = await Installer.findOne({ email });
+      if (emailInUse) {
+        res.status(400);
+        throw new Error('Ya existe un instalador con ese email');
+      }
+      installer.email = email;
+    }
+
     installer.storeId = storeId || installer.storeId;
     installer.name = name || installer.name;
-    installer.email = email || installer.email;
     installer.phone = phone || installer.phone;
     installer.company = company || installer.company;
 

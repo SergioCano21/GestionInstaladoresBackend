@@ -146,9 +146,26 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('No se encontró al administrador');
   }
   admin.name = name || admin.name;
-  admin.email = email || admin.email;
-  admin.username = username || admin.username;
   admin.role = role || admin.role;
+
+  if (username) {
+    const usernameInUse = await Admin.findOne({ username });
+    if (usernameInUse) {
+      res.status(400);
+      throw new Error('Ya existe un administrador con ese username');
+    }
+    admin.username = username;
+  }
+
+  if (email) {
+    const emailInUse = await Admin.findOne({ email });
+    if (emailInUse) {
+      res.status(400);
+      throw new Error('Ya existe un administrador con ese email');
+    }
+    admin.email = email;
+  }
+
   if (storeId != null) admin.storeId = storeId;
   if (city != null) admin.city = city;
   if (state != null) admin.state = state;

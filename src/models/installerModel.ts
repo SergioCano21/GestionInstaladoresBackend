@@ -14,6 +14,7 @@ const InstallerSchema: Schema<IInstaller> = new Schema(
     },
     email: {
       type: String,
+      unique: true,
     },
     phone: {
       type: Number,
