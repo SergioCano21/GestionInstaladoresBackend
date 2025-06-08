@@ -39,6 +39,12 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
 
 const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const { id }: { id: string } = req.body;
+
+  if (!id) {
+    res.status(400);
+    throw new Error('Error al intentar borrar la tienda');
+  }
+
   const deletedStore = await Store.findByIdAndUpdate(
     id,
     { deleted: true },
@@ -48,7 +54,7 @@ const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
     res.status(400);
     throw new Error('Error al intentar borrar la tienda');
   }
-  res.status(201).json({
+  res.status(200).json({
     message: 'Tienda borrada correctamente',
     store: deletedStore,
     error: false,
@@ -117,6 +123,19 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
   store.city = city || store.city;
   store.state = state || store.state;
   store.country = country || store.country;
+
+  const query = {
+    name: store.name,
+    city: store.city,
+    state: store.state,
+  };
+
+  const exists = await Store.findOne(query);
+
+  if (exists && store._id.toString() != exists._id.toString()) {
+    res.status(400);
+    throw new Error('Ya existe una tienda con las mismas características');
+  }
 
   const updatedStore: HydratedDocument<IStore> = await store.save();
 
