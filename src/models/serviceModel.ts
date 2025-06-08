@@ -111,6 +111,11 @@ const ServiceSchema: Schema<IService> = new Schema(
       ref: 'Installer',
       required: true,
     },
+    status: {
+      type: String,
+      enum: ['To Do', 'Doing', 'Done'],
+      required: true,
+    },
   },
   { timestamps: true },
 );

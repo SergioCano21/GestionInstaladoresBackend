@@ -64,9 +64,12 @@ export interface IService {
   additionalComments: string;
   adminId: Types.ObjectId;
   installerId: Number;
+  status: Status;
 }
 
 export type Role = 'local' | 'district' | 'national';
+
+export type Status = 'To Do' | 'Doing' | 'Done';
 
 export interface AdminRequest extends Request {
   admin: IAdmin;
