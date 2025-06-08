@@ -27,7 +27,7 @@ const AdminSchema: Schema = new Schema<IAdmin>(
     },
     role: {
       type: String,
-      enum: ['local', 'city', 'state', 'national'],
+      enum: ['local', 'district', 'national'],
       required: true,
     },
     city: {

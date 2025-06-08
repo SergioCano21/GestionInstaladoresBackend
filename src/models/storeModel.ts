@@ -7,6 +7,15 @@ const StoreSchema: Schema = new Schema<IStore>(
       type: String,
       required: true,
     },
+    numStore: {
+      type: Number,
+      required: true,
+      unique: true,
+    },
+    district: {
+      type: String,
+      required: true,
+    },
     city: {
       type: String,
       required: true,
@@ -26,8 +35,6 @@ const StoreSchema: Schema = new Schema<IStore>(
   },
   { timestamps: true },
 );
-
-StoreSchema.index({ name: 1, city: 1, state: 1 }, { unique: true });
 
 const Store: Model<IStore> = mongoose.model<IStore>('Store', StoreSchema);
 

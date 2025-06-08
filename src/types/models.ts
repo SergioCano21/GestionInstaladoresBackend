@@ -4,6 +4,8 @@ import { Types } from 'mongoose';
 export interface IStore {
   _id: Types.ObjectId;
   name: string;
+  numStore: number;
+  district: string;
   city: string;
   state: string;
   country: string;
@@ -36,7 +38,7 @@ export interface IInstaller {
   deleted: boolean;
 }
 
-export type Role = 'local' | 'state' | 'city' | 'national';
+export type Role = 'local' | 'district' | 'national';
 
 export interface AdminRequest extends Request {
   admin: IAdmin;
