@@ -21,7 +21,6 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
     name,
     city,
     state,
-    deleted: false,
   });
   if (storeExists) {
     res.status(400);
