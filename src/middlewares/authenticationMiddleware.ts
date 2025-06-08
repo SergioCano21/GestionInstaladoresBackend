@@ -19,7 +19,10 @@ const protect = expressAsyncHandler(
       };
 
       if (decoded.isAdmin) {
-        const admin = await Admin.findById(decoded.id);
+        const admin = await Admin.findOne({
+          _id: decoded.id,
+          deleted: false,
+        }).select('-password');
         if (!admin) {
           res.status(400);
           throw new Error('No se encontró administrador con ese token');

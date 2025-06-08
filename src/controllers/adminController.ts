@@ -14,28 +14,38 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Faltan datos por ingresar');
   }
 
-  const admin = await Admin.findOne({ username });
+  const admin = await Admin.findOne({ username, deleted: false });
 
-  if (admin && (await compare(password, admin.password))) {
-    const newToken = jwt.sign(
-      { isAdmin: true, id: admin._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1h' },
-    );
-    res
-      .status(200)
-      .json({
-        message: 'Login realizado con éxito',
-        error: false,
-        token: newToken,
-      })
-      .cookie('access_token', newToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 1000 * 60 * 60,
-      });
+  if (!admin) {
+    res.status(400);
+    throw new Error('No se encontró al administrador');
   }
+
+  const samePassword = await compare(password, admin.password);
+
+  if (!samePassword) {
+    res.status(400);
+    throw new Error('Constraseña incorrecta');
+  }
+
+  const newToken = jwt.sign(
+    { isAdmin: true, id: admin._id },
+    process.env.JWT_SECRET!,
+    { expiresIn: '1h' },
+  );
+  res
+    .status(200)
+    .cookie('access_token', newToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      maxAge: 1000 * 60 * 60,
+    })
+    .json({
+      message: 'Login realizado con éxito',
+      error: false,
+      token: newToken,
+    });
 });
 
 const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
@@ -180,27 +190,26 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
 
   switch (admin.role) {
     case 'national':
-      adminQuery.country = admin.country;
+      adminQuery.country = admin.country ?? '';
       break;
     case 'state':
-      adminQuery.state = admin.state;
+      adminQuery.state = admin.state ?? '';
       break;
     case 'city':
-      adminQuery.city = admin.city;
+      adminQuery.city = admin.city ?? '';
       break;
     case 'local':
       if (!admin.storeId) {
         res.status(400);
         throw new Error('No se encontró tienda para este administrador');
       }
-      adminQuery.storeId = admin.storeId;
+      adminQuery.storeId = admin.storeId ?? '';
       break;
     default:
       res.status(400);
       throw new Error('Rol inválido');
   }
-
-  const admins = await Admin.find(adminQuery);
+  const admins = await Admin.find(adminQuery).select('-password');
 
   res.status(200).json({
     error: false,

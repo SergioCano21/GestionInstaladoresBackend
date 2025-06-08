@@ -5,6 +5,7 @@ import connectDB from './config/db';
 import routerAdmin from './routes/adminRoutes';
 import routerStore from './routes/storeRoutes';
 import routerInstaller from './routes/installerRoutes';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ connectDB();
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 app.use('/api/admin', routerAdmin);
 app.use('/api/installer', routerInstaller);

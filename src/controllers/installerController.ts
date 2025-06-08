@@ -15,28 +15,38 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Faltan datos por ingresar');
   }
 
-  const installer = await Installer.findOne({ installerId });
+  const installer = await Installer.findOne({ installerId, deleted: false });
 
-  if (installer && (await compare(password, installer.password))) {
-    const newToken = jwt.sign(
-      { isAdmin: false, id: installer._id },
-      process.env.JWT_SECRET!,
-      { expiresIn: '1h' },
-    );
-    res
-      .status(200)
-      .json({
-        message: 'Login realizado con éxito',
-        error: false,
-        token: newToken,
-      })
-      .cookie('access_token', newToken, {
-        httpOnly: true,
-        sameSite: 'none',
-        secure: true,
-        maxAge: 1000 * 60 * 60,
-      });
+  if (!installer) {
+    res.status(400);
+    throw new Error('No se encontró al instalador');
   }
+
+  const samePassword = await compare(password, installer.password);
+
+  if (!samePassword) {
+    res.status(400);
+    throw new Error('Constraseña incorrecta');
+  }
+
+  const newToken = jwt.sign(
+    { isAdmin: false, id: installer._id },
+    process.env.JWT_SECRET!,
+    { expiresIn: '1h' },
+  );
+  res
+    .status(200)
+    .cookie('access_token', newToken, {
+      httpOnly: true,
+      sameSite: 'none',
+      secure: true,
+      maxAge: 1000 * 60 * 60,
+    })
+    .json({
+      message: 'Login realizado con éxito',
+      error: false,
+      token: newToken,
+    });
 });
 
 const createInstaller = expressAsyncHandler(
@@ -172,13 +182,13 @@ const findInstallers = expressAsyncHandler(
 
     switch (admin.role) {
       case 'national':
-        storeQuery.country = admin.country;
+        storeQuery.country = admin.country ?? '';
         break;
       case 'state':
-        storeQuery.state = admin.state;
+        storeQuery.state = admin.state ?? '';
         break;
       case 'city':
-        storeQuery.city = admin.city;
+        storeQuery.city = admin.city ?? '';
         break;
       case 'local':
         if (!admin.storeId) {
@@ -198,7 +208,7 @@ const findInstallers = expressAsyncHandler(
     const installers = await Installer.find({
       storeId: { $in: storesIds },
       deleted: false,
-    });
+    }).select('-password');
 
     res.status(200).json({
       error: false,
