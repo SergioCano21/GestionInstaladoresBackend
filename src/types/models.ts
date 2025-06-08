@@ -37,6 +37,35 @@ export interface IInstaller {
   deleted: boolean;
 }
 
+export interface IJobDetails {
+  quantity: number;
+  description: string;
+  installationServiceFee: number;
+  commissionFee: number;
+  installerPayment: number;
+}
+
+export interface IFeeBreakdown {
+  installationServiceFee: number;
+  commissionFee: number;
+  installerPayment: number;
+}
+
+export interface IService {
+  _id: Types.ObjectId;
+  folio: number;
+  client: string;
+  contact: number;
+  address: string;
+  jobDetails: IJobDetails[];
+  subtotals: IFeeBreakdown;
+  iva: IFeeBreakdown;
+  totals: IFeeBreakdown;
+  additionalComments: string;
+  adminId: Types.ObjectId;
+  installerId: Number;
+}
+
 export type Role = 'local' | 'district' | 'national';
 
 export interface AdminRequest extends Request {
