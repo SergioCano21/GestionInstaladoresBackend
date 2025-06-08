@@ -53,7 +53,7 @@ const createInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
     let { installerId, name, company, password, email, phone, storeId } =
       req.body;
-    if (!name || !company || !password || !installerId) {
+    if (!name || !company || !password || !installerId || !email) {
       res.status(400);
       throw new Error('Falta ingresar datos del instalador');
     }
@@ -74,15 +74,12 @@ const createInstaller = expressAsyncHandler(
     const salt: string = await genSalt(10);
     const hashedPassword: string = await hash(password, salt);
 
-    if (!email) email = '';
-    if (!phone) phone = '';
-
     const newInstaller = await Installer.create({
       installerId,
       storeId,
       name,
       email,
-      phone,
+      ...(phone && { phone }),
       company,
       password: hashedPassword,
     });
@@ -96,7 +93,7 @@ const createInstaller = expressAsyncHandler(
         storeId: newInstaller.storeId,
         name: newInstaller.name,
         email: newInstaller.email,
-        phone: newInstaller.phone,
+        ...(newInstaller.phone && { phone: newInstaller.phone }),
         company: newInstaller.company,
       },
     });
@@ -115,7 +112,7 @@ const updateInstaller = expressAsyncHandler(
 
     if (installerId) {
       const idInUse = await Installer.findOne({ installerId });
-      if (idInUse) {
+      if (idInUse && idInUse._id.toString() != installer._id.toString()) {
         res.status(400);
         throw new Error('Ya existe un instalador con ese id');
       }
@@ -124,7 +121,7 @@ const updateInstaller = expressAsyncHandler(
 
     if (email) {
       const emailInUse = await Installer.findOne({ email });
-      if (emailInUse) {
+      if (emailInUse && emailInUse._id.toString() != installer._id.toString()) {
         res.status(400);
         throw new Error('Ya existe un instalador con ese email');
       }
@@ -133,8 +130,8 @@ const updateInstaller = expressAsyncHandler(
 
     installer.storeId = storeId || installer.storeId;
     installer.name = name || installer.name;
-    installer.phone = phone || installer.phone;
     installer.company = company || installer.company;
+    if (phone != null) installer.phone = phone;
 
     if (password) {
       const salt: string = await genSalt(10);
@@ -152,7 +149,7 @@ const updateInstaller = expressAsyncHandler(
         storeId: installer.storeId,
         name: installer.name,
         email: installer.email,
-        phone: installer.phone,
+        ...(installer.phone && { phone: installer.phone }),
         company: installer.company,
       },
       message: 'Instalador actualizado correctamente',

@@ -15,6 +15,7 @@ const InstallerSchema: Schema<IInstaller> = new Schema(
     email: {
       type: String,
       unique: true,
+      required: true,
     },
     phone: {
       type: Number,
@@ -23,12 +24,15 @@ const InstallerSchema: Schema<IInstaller> = new Schema(
       type: String,
       required: true,
     },
-    storeId: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Store',
-      },
-    ],
+    storeId: {
+      type: [
+        {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Store',
+        },
+      ],
+      required: true,
+    },
     password: {
       type: String,
       required: true,
