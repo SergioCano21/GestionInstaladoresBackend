@@ -153,16 +153,18 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
   } = req.body;
 
   const admin = await Admin.findOne({ _id: id, deleted: false });
+
   if (!admin) {
     res.status(400);
     throw new Error('No se encontró al administrador');
   }
+
   admin.name = name || admin.name;
   admin.role = role || admin.role;
 
   if (username) {
     const usernameInUse = await Admin.findOne({ username });
-    if (usernameInUse) {
+    if (usernameInUse && usernameInUse._id.toString() != admin._id.toString()) {
       res.status(400);
       throw new Error('Ya existe un administrador con ese username');
     }
@@ -171,7 +173,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
 
   if (email) {
     const emailInUse = await Admin.findOne({ email });
-    if (emailInUse) {
+    if (emailInUse && emailInUse._id.toString() != admin._id.toString()) {
       res.status(400);
       throw new Error('Ya existe un administrador con ese email');
     }

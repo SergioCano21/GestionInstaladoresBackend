@@ -63,8 +63,10 @@ export interface IService {
   totals: IFeeBreakdown;
   additionalComments: string;
   adminId: Types.ObjectId;
-  installerId: Number;
+  installerId: number;
+  storeId: Types.ObjectId;
   status: Status;
+  deleted: boolean;
 }
 
 export type Role = 'local' | 'district' | 'national';

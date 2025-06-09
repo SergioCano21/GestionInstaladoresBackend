@@ -111,10 +111,19 @@ const ServiceSchema: Schema<IService> = new Schema(
       ref: 'Installer',
       required: true,
     },
+    storeId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Store',
+      required: true,
+    },
     status: {
       type: String,
       enum: ['To Do', 'Doing', 'Done'],
       required: true,
+    },
+    deleted: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true },
