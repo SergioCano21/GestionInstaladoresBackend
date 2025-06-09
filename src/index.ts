@@ -6,6 +6,7 @@ import routerAdmin from './routes/adminRoutes';
 import routerStore from './routes/storeRoutes';
 import routerInstaller from './routes/installerRoutes';
 import cookieParser from 'cookie-parser';
+import routerService from './routes/serviceRoutes';
 
 dotenv.config();
 
@@ -21,6 +22,7 @@ app.use(cookieParser());
 app.use('/api/admin', routerAdmin);
 app.use('/api/installer', routerInstaller);
 app.use('/api/store', routerStore);
+app.use('/api/service', routerService);
 
 app.use(errorHandler);
 
