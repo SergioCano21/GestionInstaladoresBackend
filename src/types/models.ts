@@ -1,5 +1,5 @@
 import { Request } from 'express';
-import { Types } from 'mongoose';
+import { Date, Types } from 'mongoose';
 
 export interface IStore {
   _id: Types.ObjectId;
@@ -68,6 +68,17 @@ export interface IService {
   status: Status;
   deleted: boolean;
 }
+
+export interface ICalendar {
+  _id: Types.ObjectId;
+  startTime: Date;
+  endTime: Date;
+  installerId: number;
+  serviceId: Types.ObjectId;
+  type: CalendarEntryType;
+}
+
+export type CalendarEntryType = 'Service' | 'Block';
 
 export type Role = 'local' | 'district' | 'national';
 
