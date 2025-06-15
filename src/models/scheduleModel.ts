@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema } from 'mongoose';
-import { ICalendar } from '../types/models';
+import { ISchedule } from '../types/models';
 
-const CalendarSchema: Schema<ICalendar> = new Schema(
+const ScheduleSchema: Schema<ISchedule> = new Schema(
   {
     startTime: {
       type: Date,
@@ -25,13 +25,16 @@ const CalendarSchema: Schema<ICalendar> = new Schema(
       enum: ['Service', 'Block'],
       required: true,
     },
+    description: {
+      type: String,
+    },
   },
   { timestamps: true },
 );
 
-const Calendar: Model<ICalendar> = mongoose.model<ICalendar>(
-  'Calendar',
-  CalendarSchema,
+const Schedule: Model<ISchedule> = mongoose.model<ISchedule>(
+  'Schedule',
+  ScheduleSchema,
 );
 
-export default Calendar;
+export default Schedule;
