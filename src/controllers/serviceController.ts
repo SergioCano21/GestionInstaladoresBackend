@@ -9,7 +9,7 @@ const createService = expressAsyncHandler(
     const {
       folio,
       client,
-      contact,
+      clientPhone,
       address,
       jobDetails,
       additionalComments,
@@ -17,7 +17,7 @@ const createService = expressAsyncHandler(
     }: {
       folio: number;
       client: string;
-      contact: number;
+      clientPhone: string;
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
@@ -30,7 +30,7 @@ const createService = expressAsyncHandler(
     if (
       !folio ||
       !client ||
-      !contact ||
+      !clientPhone ||
       !address ||
       !jobDetails ||
       !installerId
@@ -87,7 +87,7 @@ const createService = expressAsyncHandler(
     const newService = await Service.create({
       folio,
       client,
-      contact,
+      clientPhone,
       address,
       jobDetails,
       subtotals,
@@ -169,7 +169,7 @@ const updateService = expressAsyncHandler(
       id,
       folio,
       client,
-      contact,
+      clientPhone,
       address,
       jobDetails,
       additionalComments,
@@ -178,7 +178,7 @@ const updateService = expressAsyncHandler(
       id: string;
       folio: number;
       client: string;
-      contact: number;
+      clientPhone: string;
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
@@ -202,7 +202,7 @@ const updateService = expressAsyncHandler(
     }
 
     service.client = client || service.client;
-    service.contact = contact || service.contact;
+    service.clientPhone = clientPhone || service.clientPhone;
     service.address = address || service.address;
     service.additionalComments =
       additionalComments || service.additionalComments;

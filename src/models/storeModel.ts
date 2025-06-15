@@ -12,6 +12,10 @@ const StoreSchema: Schema = new Schema<IStore>(
       required: true,
       unique: true,
     },
+    phone: {
+      type: String,
+      required: true,
+    },
     district: {
       type: String,
       required: true,

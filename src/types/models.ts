@@ -5,6 +5,7 @@ export interface IStore {
   _id: Types.ObjectId;
   name: string;
   numStore: number;
+  phone: string;
   district: string;
   city: string;
   state: string;
@@ -30,7 +31,7 @@ export interface IInstaller {
   installerId: number;
   name: string;
   email: string;
-  phone: Number;
+  phone: string;
   company: string;
   storeId: Types.ObjectId[];
   password: string;
@@ -55,7 +56,7 @@ export interface IService {
   _id: Types.ObjectId;
   folio: number;
   client: string;
-  contact: number;
+  clientPhone: string;
   address: string;
   jobDetails: IJobDetails[];
   subtotals: IFeeBreakdown;
@@ -76,7 +77,25 @@ export interface ISchedule {
   installerId: number;
   serviceId: Types.ObjectId;
   type: ScheduleEntryType;
-  description: String;
+  description: string;
+}
+
+export interface IReceipt {
+  _id: Types.ObjectId;
+  installedProduct: IInstalledProduct[];
+  recommendations?: string;
+  clientExperience: string;
+  images: string[];
+  clientSignature: string;
+  serviceId: Types.ObjectId;
+}
+
+export interface IInstalledProduct {
+  installedProduct: string;
+  installedIn: string;
+  quantity: string;
+  specification: string;
+  serialNumber?: string;
 }
 
 export type ScheduleEntryType = 'Service' | 'Block';

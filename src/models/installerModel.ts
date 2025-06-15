@@ -18,7 +18,7 @@ const InstallerSchema: Schema<IInstaller> = new Schema(
       required: true,
     },
     phone: {
-      type: Number,
+      type: String,
     },
     company: {
       type: String,

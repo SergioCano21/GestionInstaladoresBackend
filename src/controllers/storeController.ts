@@ -8,6 +8,7 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const {
     name,
     numStore,
+    phone,
     district,
     city,
     state,
@@ -15,13 +16,22 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   }: {
     name: string;
     numStore: number;
+    phone: string;
     district: string;
     city: string;
     state: string;
     country: string;
   } = req.body;
 
-  if (!name || !city || !state || !country || !numStore || !district) {
+  if (
+    !name ||
+    !city ||
+    !state ||
+    !country ||
+    !numStore ||
+    !district ||
+    !phone
+  ) {
     res.status(400);
     throw new Error('Faltan datos de la tienda');
   }
@@ -35,6 +45,7 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const newStore = await Store.create({
     name,
     numStore,
+    phone,
     district,
     city,
     state,

@@ -12,8 +12,8 @@ const ServiceSchema: Schema<IService> = new Schema(
       type: String,
       required: true,
     },
-    contact: {
-      type: Number,
+    clientPhone: {
+      type: String,
       required: true,
     },
     address: {
