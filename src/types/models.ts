@@ -82,11 +82,17 @@ export interface ISchedule {
 
 export interface IReceipt {
   _id: Types.ObjectId;
+  startTime: Date;
+  endTime: Date;
+  installerName: string;
   installedProduct: IInstalledProduct[];
   recommendations?: string;
-  clientExperience: string;
+  clientComments?: string;
   images: string[];
   clientSignature: string;
+  isClientAbsent: boolean;
+  relationshipWithClient?: string;
+  secondaryClientName?: string;
   serviceId: Types.ObjectId;
 }
 
@@ -94,7 +100,7 @@ export interface IInstalledProduct {
   installedProduct: string;
   installedIn: string;
   quantity: string;
-  specification: string;
+  specification?: string;
   serialNumber?: string;
 }
 
