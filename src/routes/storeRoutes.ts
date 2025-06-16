@@ -7,13 +7,13 @@ import {
 import {
   createStore,
   deleteStore,
-  findByAccess,
+  findStores,
   updateStore,
 } from '../controllers/storeController';
 
 const routerStore = express.Router();
 
-routerStore.get('/', protect, isAdmin, findByAccess);
+routerStore.get('/', protect, findStores);
 routerStore.post('/', protect, isAdmin, isRoleDistrictOrNational, createStore);
 routerStore.put('/', protect, isAdmin, isRoleDistrictOrNational, updateStore);
 routerStore.delete(

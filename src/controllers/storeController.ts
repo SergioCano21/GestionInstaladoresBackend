@@ -83,15 +83,11 @@ const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-const findByAccess = expressAsyncHandler(
-  async (req: Request, res: Response) => {
-    const admin = req.admin;
+const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
+  const admin = req.admin;
+  const installer = req.installer;
 
-    if (!admin) {
-      res.status(403);
-      throw new Error('Acceso no autorizado');
-    }
-
+  if (admin) {
     let query: Partial<IStore> = { deleted: false };
 
     switch (admin.role) {
@@ -116,9 +112,24 @@ const findByAccess = expressAsyncHandler(
       throw new Error('No se encontraron tiendas');
     }
 
-    res.status(200).json({ store: stores, error: false });
-  },
-);
+    res.status(200).json({
+      store: stores,
+      error: false,
+      message: 'Tiendas encontradas',
+    });
+  } else {
+    if (!installer) {
+      res.status(400);
+      throw new Error('No se encontró el instalador');
+    }
+    const stores = await Store.find({ _id: { $in: installer.storeId } });
+    res.status(200).json({
+      error: false,
+      message: 'Tiendas encontradas',
+      stores,
+    });
+  }
+});
 
 const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const { id, name, numStore, district, city, state, country } = req.body;
@@ -152,4 +163,4 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
   });
 });
 
-export { createStore, deleteStore, findByAccess, updateStore };
+export { createStore, deleteStore, findStores, updateStore };

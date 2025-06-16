@@ -169,9 +169,8 @@ const deleteSchedule = expressAsyncHandler(
 
 const findSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { installerId }: { installerId: number } = req.body;
-
     const admin = req.admin;
+    const installer = req.installer;
 
     if (admin) {
       if (admin.role == 'local') {
@@ -261,13 +260,13 @@ const findSchedule = expressAsyncHandler(
         });
       }
     } else {
-      if (!installerId) {
+      if (!installer?.installerId) {
         res.status(400);
         throw new Error('Falta el id del instalador');
       }
-      const schedules = await Schedule.find({ installerId }).populate(
-        'serviceId',
-      );
+      const schedules = await Schedule.find({
+        installerId: installer.installerId,
+      }).populate('serviceId');
       res.status(200).json({
         error: false,
         message: 'Horarios encontrados',

@@ -29,7 +29,9 @@ const protect = expressAsyncHandler(
         }
         req.admin = admin;
       } else {
-        const installer = await Installer.findById(decoded.id);
+        const installer = await Installer.findById(decoded.id).select(
+          '-password',
+        );
         if (!installer) {
           res.status(400);
           throw new Error('No se encontró instalador con ese token');

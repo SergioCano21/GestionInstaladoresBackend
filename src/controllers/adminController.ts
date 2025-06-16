@@ -209,7 +209,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
 
   res.status(200).json({
     error: false,
-    installer: {
+    admin: {
       id: admin._id,
       name: admin.name,
       email: admin.email,

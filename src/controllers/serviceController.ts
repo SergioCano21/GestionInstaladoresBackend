@@ -109,8 +109,9 @@ const createService = expressAsyncHandler(
 );
 
 const findService = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { installerId }: { installerId: number } = req.body;
   const admin = req.admin;
+  const installer = req.installer;
+
   if (admin) {
     if (admin.role == 'local') {
       const services = await Service.find({
@@ -150,11 +151,11 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
       });
     }
   } else {
-    if (!installerId) {
+    if (!installer?.installerId) {
       res.status(400);
       throw new Error('Falta el id del instalador');
     }
-    const services = await Service.find({ installerId });
+    const services = await Service.find({ installerId: installer.installerId });
     res.status(200).json({
       error: false,
       message: 'Tiendas encontradas',

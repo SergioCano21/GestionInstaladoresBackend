@@ -98,9 +98,8 @@ const createReceipt = expressAsyncHandler(
 );
 
 const findReceipt = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { installerId }: { installerId: number } = req.body;
-
   const admin = req.admin;
+  const installer = req.installer;
 
   if (admin) {
     if (admin.role == 'local') {
@@ -185,7 +184,7 @@ const findReceipt = expressAsyncHandler(async (req: Request, res: Response) => {
       });
     }
   } else {
-    if (!installerId) {
+    if (!installer?.installerId) {
       res.status(400);
       throw new Error('Falta el id del instalador');
     }
@@ -202,7 +201,7 @@ const findReceipt = expressAsyncHandler(async (req: Request, res: Response) => {
       { $unwind: '$service' },
       {
         $match: {
-          'service.installerId': installerId,
+          'service.installerId': installer.installerId,
         },
       },
     ]);

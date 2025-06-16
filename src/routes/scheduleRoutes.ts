@@ -10,7 +10,7 @@ import { isRoleLocal, protect } from '../middlewares/authenticationMiddleware';
 const routerSchedule: Router = express.Router();
 
 routerSchedule.get('/', protect, findSchedule);
-routerSchedule.post('/', protect, isRoleLocal, createSchedule);
+routerSchedule.post('/', protect, createSchedule);
 routerSchedule.put('/', protect, isRoleLocal, updateSchedule);
 routerSchedule.delete('/', protect, isRoleLocal, deleteSchedule);
 
