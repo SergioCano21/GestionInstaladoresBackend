@@ -34,12 +34,23 @@ const protect = expressAsyncHandler(
           res.status(400);
           throw new Error('No se encontró instalador con ese token');
         }
+        req.installer = installer;
       }
       next();
     } catch (error) {
       res.status(401);
       throw new Error('Acceso no autorizado');
     }
+  },
+);
+
+const isInstaller = expressAsyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (!req.installer) {
+      res.status(401);
+      throw new Error('Acceso no autorizado');
+    }
+    next();
   },
 );
 
@@ -77,4 +88,4 @@ const isRoleDistrictOrNational = expressAsyncHandler(
   },
 );
 
-export { protect, isAdmin, isRoleLocal, isRoleDistrictOrNational };
+export { protect, isAdmin, isRoleLocal, isRoleDistrictOrNational, isInstaller };

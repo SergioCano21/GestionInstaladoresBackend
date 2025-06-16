@@ -8,6 +8,7 @@ import routerInstaller from './routes/installerRoutes';
 import cookieParser from 'cookie-parser';
 import routerService from './routes/serviceRoutes';
 import routerSchedule from './routes/scheduleRoutes';
+import routerReceipt from './routes/receiptRoutes';
 
 dotenv.config();
 
@@ -25,6 +26,7 @@ app.use('/api/installer', routerInstaller);
 app.use('/api/store', routerStore);
 app.use('/api/service', routerService);
 app.use('/api/schedule', routerSchedule);
+app.use('/api/receipt', routerReceipt);
 
 app.use(errorHandler);
 
