@@ -16,11 +16,11 @@ const StoreSchema: Schema = new Schema<IStore>(
       type: String,
       required: true,
     },
-    district: {
+    address: {
       type: String,
       required: true,
     },
-    city: {
+    district: {
       type: String,
       required: true,
     },

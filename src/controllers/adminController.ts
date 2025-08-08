@@ -4,6 +4,7 @@ import Admin from '../models/adminModel';
 import { compare, genSalt, hash } from 'bcryptjs';
 import { IAdmin } from '../types/models';
 import jwt from 'jsonwebtoken';
+import Store from '../models/storeModel';
 
 const login = expressAsyncHandler(async (req: Request, res: Response) => {
   const { username, password }: { username: string; password: string } =
@@ -36,7 +37,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
   res
     .status(200)
     .cookie('access_token', newToken, {
-      httpOnly: true,
+      httpOnly: false,
       sameSite: 'none',
       secure: true,
       maxAge: 1000 * 60 * 60,
@@ -44,33 +45,67 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
     .json({
       message: 'Login realizado con éxito',
       error: false,
-      token: newToken,
+      admin: {
+        role: admin.role,
+        name: admin.name,
+      },
     });
 });
 
+const validate = expressAsyncHandler(async (req: Request, res: Response) => {
+  res.status(200).json({
+    message: 'Token válido',
+    error: false,
+    admin: {
+      role: req.admin?.role,
+      name: req.admin?.name,
+    },
+  });
+});
+
+const logout = expressAsyncHandler(async (_req: Request, res: Response) => {
+  res.status(200).clearCookie('access_token').json({
+    message: 'Logout realizado con éxito',
+    error: false,
+  });
+});
+
 const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
-  let { username, password, name, email, storeId, role, district, country } =
-    req.body;
-  if (!username || !password || !name || !email || !role) {
+  let { username, name, email, storeId, role, district, country } = req.body;
+
+  // Temporal fix
+  const password = '123456';
+  //
+
+  if (!username || !name || !email || !role) {
     res.status(400);
     throw new Error('Falta ingresar datos del administrador');
   }
 
-  if (role == 'local' && !storeId) {
+  if (role === 'local') {
+    if (!storeId) {
+      res.status(400);
+      throw new Error(
+        'Falta agregar tienda a la que se está registrando el administrador',
+      );
+    }
+    const store = await Store.findById(storeId);
+    if (!store) {
+      res.status(400);
+      throw new Error('La tienda no existe');
+    }
+    district = store.district;
+    country = store.country;
+  }
+
+  if (role === 'district' && !district && !country) {
     res.status(400);
     throw new Error(
-      'Falta agregar tienda a la que se está registrando el administrador',
+      'Falta agregar el distrito y país al que se está registrando el administrador',
     );
   }
 
-  if (role == 'district' && !district) {
-    res.status(400);
-    throw new Error(
-      'Falta agregar el distrito al que se está registrando el administrador',
-    );
-  }
-
-  if (role == 'national' && !country) {
+  if (role === 'national' && !country) {
     res.status(400);
     throw new Error(
       'Falta agregar el país al que se está registrando el administrador',
@@ -117,7 +152,7 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const deleteAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id }: { id: string } = req.body;
+  const { id } = req.params;
   const deletedAdmin = await Admin.findOneAndUpdate(
     { _id: id },
     { deleted: true },
@@ -125,10 +160,10 @@ const deleteAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
   );
   if (!deletedAdmin || !deletedAdmin.deleted) {
     res.status(400);
-    throw new Error('Error al intentar borrar al administrador');
+    throw new Error('Error al intentar eliminar al administrador');
   }
   res.status(200).json({
-    message: 'Administrador borrado correctamente',
+    message: 'Administrador eliminado correctamente',
     admin: {
       id: deletedAdmin._id,
       username: deletedAdmin.username,
@@ -140,17 +175,10 @@ const deleteAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
-  const {
-    id,
-    name,
-    email,
-    username,
-    password,
-    storeId,
-    role,
-    district,
-    country,
-  } = req.body;
+  const { name, email, username, password, storeId, role, district, country } =
+    req.body;
+
+  const { id } = req.params;
 
   const admin = await Admin.findOne({ _id: id, deleted: false });
 
@@ -159,44 +187,64 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('No se encontró al administrador');
   }
 
-  admin.name = name || admin.name;
-  admin.role = role || admin.role;
+  if (name) admin.name = name;
+  if (role) admin.role = role;
 
-  if (username) {
+  if (username && username !== admin.username) {
     const usernameInUse = await Admin.findOne({ username });
-    if (usernameInUse && usernameInUse._id.toString() != admin._id.toString()) {
+    if (
+      usernameInUse &&
+      usernameInUse._id.toString() !== admin._id.toString()
+    ) {
       res.status(400);
       throw new Error('Ya existe un administrador con ese username');
     }
     admin.username = username;
   }
 
-  if (email) {
+  if (email && email !== admin.email) {
     const emailInUse = await Admin.findOne({ email });
-    if (emailInUse && emailInUse._id.toString() != admin._id.toString()) {
+    if (emailInUse && emailInUse._id.toString() !== admin._id.toString()) {
       res.status(400);
       throw new Error('Ya existe un administrador con ese email');
     }
     admin.email = email;
   }
 
-  if (storeId != null) admin.storeId = storeId;
-  if (district != null) admin.district = district;
-  if (country != null) admin.country = country;
+  if (storeId) admin.storeId = storeId;
+  if (district) admin.district = district;
+  if (country) admin.country = country;
 
-  if (admin.role == 'national' && !admin.country) {
-    res.status(400);
-    throw new Error('Falta agregar país para cambiar de rol');
+  if (admin.role === 'national') {
+    if (!admin.country) {
+      res.status(400);
+      throw new Error('Falta agregar país para cambiar de rol');
+    }
+    admin.district = undefined;
+    admin.storeId = undefined;
   }
 
-  if (admin.role == 'district' && !admin.district) {
-    res.status(400);
-    throw new Error('Falta agregar distrito para cambiar de rol');
+  if (admin.role === 'district') {
+    if (!admin.district || !admin.country) {
+      res.status(400);
+      throw new Error('Falta agregar distrito y país para cambiar de rol');
+    }
+    admin.storeId = undefined;
   }
 
-  if (admin.role == 'local' && !admin.storeId) {
-    res.status(400);
-    throw new Error('Falta agregar tienda para cambiar de rol');
+  if (admin.role === 'local') {
+    if (!admin.storeId) {
+      res.status(400);
+      throw new Error('Falta agregar tienda para cambiar de rol');
+    }
+
+    const store = await Store.findById(admin.storeId);
+    if (!store) {
+      res.status(400);
+      throw new Error('La tienda no existe');
+    }
+    admin.district = store.district;
+    admin.country = store.country;
   }
 
   if (password) {
@@ -216,7 +264,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
       username: admin.username,
       role: admin.role,
       ...(admin.storeId && { storeId: admin.storeId }),
-      ...(admin.district && { city: admin.district }),
+      ...(admin.district && { district: admin.district }),
       ...(admin.country && { country: admin.country }),
     },
     message: 'Administrador actualizado correctamente',
@@ -230,32 +278,79 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Acceso no autorizado');
   }
 
-  let adminQuery: Partial<IAdmin> = { deleted: false };
+  let adminQuery: Partial<IAdmin> = {};
 
   switch (admin.role) {
     case 'national':
-      adminQuery.country = admin.country ?? '';
+      if (!admin.country) {
+        res.status(400);
+        throw new Error('Faltan datos para la busqueda');
+      }
+      adminQuery.country = admin.country;
       break;
     case 'district':
-      adminQuery.district = admin.district ?? '';
+      if (!admin.district) {
+        res.status(400);
+        throw new Error('Faltan datos para la busqueda');
+      }
+      adminQuery.district = admin.district;
       break;
     case 'local':
       if (!admin.storeId) {
         res.status(400);
         throw new Error('No se encontró tienda para este administrador');
       }
-      adminQuery.storeId = admin.storeId ?? '';
       break;
     default:
       res.status(400);
       throw new Error('Rol inválido');
   }
-  const admins = await Admin.find(adminQuery).select('-password');
+
+  const admins = await Admin.find(adminQuery)
+    .populate({ path: 'storeId', select: '_id numStore name' })
+    .select('-password -createdAt -updatedAt -__v');
 
   res.status(200).json({
     error: false,
+    message: 'Administradores encontados',
     admins,
   });
 });
 
-export { createAdmin, deleteAdmin, updateAdmin, findAdmins, login };
+const restoreAdmin = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400);
+      throw new Error('No se proporcionó el id del administador');
+    }
+
+    const admin = await Admin.findOne({ _id: id, deleted: true });
+
+    if (!admin) {
+      res.status(404);
+      throw new Error('No se encontró al administrador');
+    }
+
+    admin.deleted = false;
+
+    await admin.save();
+
+    res.status(200).json({
+      message: 'Administeador restaurado correctamente',
+      error: false,
+    });
+  },
+);
+
+export {
+  createAdmin,
+  deleteAdmin,
+  updateAdmin,
+  findAdmins,
+  login,
+  validate,
+  logout,
+  restoreAdmin,
+};

@@ -6,8 +6,8 @@ export interface IStore {
   name: string;
   numStore: number;
   phone: string;
+  address: string;
   district: string;
-  city: string;
   state: string;
   country: string;
   deleted: boolean;
@@ -64,7 +64,7 @@ export interface IService {
   totals: IFeeBreakdown;
   additionalComments: string;
   adminId: Types.ObjectId;
-  installerId: number;
+  installerId: Types.ObjectId;
   storeId: Types.ObjectId;
   status: Status;
   deleted: boolean;

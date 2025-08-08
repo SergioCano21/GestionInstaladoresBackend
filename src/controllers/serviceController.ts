@@ -3,6 +3,7 @@ import expressAsyncHandler from 'express-async-handler';
 import Service from '../models/serviceModel';
 import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
 import Store from '../models/storeModel';
+import mongoose from 'mongoose';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -21,7 +22,7 @@ const createService = expressAsyncHandler(
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
-      installerId: number;
+      installerId: string;
     } = req.body;
 
     const adminId = req.admin?._id;
@@ -117,10 +118,15 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
       const services = await Service.find({
         storeId: admin.storeId,
         deleted: false,
-      });
+      })
+        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
+        .populate([
+          { path: 'installerId', select: 'installerId name' },
+          { path: 'storeId', select: 'numStore name' },
+        ]);
       res.status(200).json({
         error: false,
-        message: 'Tiendas encontradas',
+        message: 'Servicios encontrados',
         services,
       });
     } else if (admin.role == 'district') {
@@ -131,10 +137,15 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
       const services = await Service.find({
         storeId: { $in: storesIds },
         deleted: false,
-      });
+      })
+        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
+        .populate([
+          { path: 'installerId', select: 'installerId name' },
+          { path: 'storeId', select: 'numStore name' },
+        ]);
       res.status(200).json({
         error: false,
-        message: 'Tiendas encontradas',
+        message: 'Servicios encontrados',
         services,
       });
     } else {
@@ -143,10 +154,15 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
       const services = await Service.find({
         storeId: { $in: storesIds },
         deleted: false,
-      });
+      })
+        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
+        .populate([
+          { path: 'installerId', select: 'installerId name' },
+          { path: 'storeId', select: 'numStore name' },
+        ]);
       res.status(200).json({
         error: false,
-        message: 'Tiendas encontradas',
+        message: 'Servicios encontrados',
         services,
       });
     }
@@ -155,10 +171,15 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
       res.status(400);
       throw new Error('Falta el id del instalador');
     }
-    const services = await Service.find({ installerId: installer.installerId });
+    const services = await Service.find({ installerId: installer._id })
+      .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
+      .populate([
+        { path: 'installerId', select: 'installerId name' },
+        { path: 'storeId', select: 'numStore name' },
+      ]);
     res.status(200).json({
       error: false,
-      message: 'Tiendas encontradas',
+      message: 'Servicios encontrados',
       services,
     });
   }
@@ -183,7 +204,7 @@ const updateService = expressAsyncHandler(
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
-      installerId: number;
+      installerId: string;
     } = req.body;
 
     const service = await Service.findOne({ _id: id, deleted: false });
@@ -207,7 +228,10 @@ const updateService = expressAsyncHandler(
     service.address = address || service.address;
     service.additionalComments =
       additionalComments || service.additionalComments;
-    service.installerId = installerId || service.installerId;
+
+    if (installerId) {
+      service.installerId = new mongoose.Types.ObjectId(installerId);
+    }
 
     if (jobDetails) {
       let installationServiceFee: number = 0;

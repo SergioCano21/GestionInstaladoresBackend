@@ -107,7 +107,7 @@ const ServiceSchema: Schema<IService> = new Schema(
       required: true,
     },
     installerId: {
-      type: Number,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Installer',
       required: true,
     },

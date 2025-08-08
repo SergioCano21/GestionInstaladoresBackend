@@ -10,7 +10,7 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
     numStore,
     phone,
     district,
-    city,
+    address,
     state,
     country,
   }: {
@@ -18,14 +18,14 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
     numStore: number;
     phone: string;
     district: string;
-    city: string;
+    address: string;
     state: string;
     country: string;
   } = req.body;
 
   if (
     !name ||
-    !city ||
+    !address ||
     !state ||
     !country ||
     !numStore ||
@@ -46,8 +46,8 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
     name,
     numStore,
     phone,
+    address,
     district,
-    city,
     state,
     country,
   });
@@ -60,7 +60,7 @@ const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id }: { id: string } = req.body;
+  const { id } = req.params;
 
   if (!id) {
     res.status(400);
@@ -77,7 +77,7 @@ const deleteStore = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Error al intentar borrar la tienda');
   }
   res.status(200).json({
-    message: 'Tienda borrada correctamente',
+    message: 'Tienda eliminada correctamente',
     store: deletedStore,
     error: false,
   });
@@ -88,7 +88,7 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
   const installer = req.installer;
 
   if (admin) {
-    let query: Partial<IStore> = { deleted: false };
+    let query: Partial<IStore> = {};
 
     switch (admin.role) {
       case 'national':
@@ -113,7 +113,7 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
     }
 
     res.status(200).json({
-      store: stores,
+      stores,
       error: false,
       message: 'Tiendas encontradas',
     });
@@ -132,7 +132,14 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
-  const { id, name, numStore, district, city, state, country } = req.body;
+  const { name, numStore, phone, address, district, state, country } = req.body;
+
+  const { id } = req.params;
+
+  if (!id) {
+    res.status(400);
+    throw new Error('No se proporcionó el id de la tienda');
+  }
 
   const store = await Store.findOne({ _id: id, deleted: false });
 
@@ -141,12 +148,13 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('No se encontró la tienda');
   }
 
-  store.name = name || store.name;
-  store.numStore = numStore || store.numStore;
-  store.district = district || store.district;
-  store.city = city || store.city;
-  store.state = state || store.state;
-  store.country = country || store.country;
+  if (name !== undefined) store.name = name;
+  if (numStore !== undefined) store.numStore = numStore;
+  if (phone !== undefined) store.phone = phone;
+  if (address !== undefined) store.address = address;
+  if (district !== undefined) store.district = district;
+  if (state !== undefined) store.state = state;
+  if (country !== undefined) store.country = country;
 
   const exists = await Store.findOne({ numStore: store.numStore });
 
@@ -159,8 +167,36 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
 
   res.status(200).json({
     store: updatedStore,
+    message: 'Tienda actualizada correctamente',
     error: false,
   });
 });
 
-export { createStore, deleteStore, findStores, updateStore };
+const restoreStore = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    if (!id) {
+      res.status(400);
+      throw new Error('No se proporcionó el id de la tienda');
+    }
+
+    const store = await Store.findOne({ _id: id, deleted: true });
+
+    if (!store) {
+      res.status(404);
+      throw new Error('No se encontró la tienda');
+    }
+
+    store.deleted = false;
+
+    await store.save();
+
+    res.status(200).json({
+      message: 'Tienda restaurada correctamente',
+      error: false,
+    });
+  },
+);
+
+export { createStore, deleteStore, findStores, updateStore, restoreStore };

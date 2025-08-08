@@ -9,11 +9,14 @@ import cookieParser from 'cookie-parser';
 import routerService from './routes/serviceRoutes';
 import routerSchedule from './routes/scheduleRoutes';
 import routerReceipt from './routes/receiptRoutes';
+import cors from 'cors';
 
 dotenv.config();
 
 const app: Express = express();
 const port: number = process.env.PORT ? Number(process.env.PORT) : 3000;
+
+app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
 
 connectDB();
 

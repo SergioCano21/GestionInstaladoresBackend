@@ -24,7 +24,7 @@ const protect = expressAsyncHandler(
           deleted: false,
         }).select('-password');
         if (!admin) {
-          res.status(400);
+          res.status(401);
           throw new Error('No se encontró administrador con ese token');
         }
         req.admin = admin;
@@ -33,7 +33,7 @@ const protect = expressAsyncHandler(
           '-password',
         );
         if (!installer) {
-          res.status(400);
+          res.status(401);
           throw new Error('No se encontró instalador con ese token');
         }
         req.installer = installer;
