@@ -51,9 +51,15 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
 
 const createInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    let { installerId, name, company, password, email, phone, storeId } =
-      req.body;
-    if (!name || !company || !password || !installerId || !email) {
+    let { installerId, name, company, password, email, phone } = req.body;
+
+    const storeId = req.admin?.storeId;
+
+    // Temporal fix
+    password = '123456';
+    //
+
+    if (!name || !company || !installerId || !email) {
       res.status(400);
       throw new Error('Falta ingresar datos del instalador');
     }
@@ -61,7 +67,7 @@ const createInstaller = expressAsyncHandler(
     if (!storeId) {
       res.status(400);
       throw new Error(
-        'Falta agregar tienda a la que se está registrando el instalador',
+        'Error al obtener la tienda a la que se está registrando el instalador',
       );
     }
 
@@ -100,17 +106,48 @@ const createInstaller = expressAsyncHandler(
   },
 );
 
+const addExistingInstaller = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const { installerId } = req.body;
+    const storeId = req.admin?.storeId;
+
+    const updatedInstaller = await Installer.findOneAndUpdate(
+      { installerId },
+      { $addToSet: { storeId: storeId } },
+      { new: true },
+    );
+    if (!updatedInstaller) {
+      res.status(400);
+      throw new Error('Instalador no encontrado');
+    }
+    res.status(200).json({
+      message: 'Se agrego al instalador correctamente',
+      installer: {
+        id: updatedInstaller._id,
+        installerId: updatedInstaller.installerId,
+        name: updatedInstaller.name,
+        email: updatedInstaller.email,
+        phone: updatedInstaller.phone,
+        company: updatedInstaller.company,
+      },
+      error: false,
+    });
+  },
+);
+
 const updateInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id, installerId, storeId, name, email, phone, company, password } =
+    const { installerId, storeId, name, email, phone, company, password } =
       req.body;
+    const { id } = req.params;
+
     const installer = await Installer.findOne({ _id: id, deleted: false });
     if (!installer) {
       res.status(400);
       throw new Error('No se encontró al instalador');
     }
 
-    if (installerId) {
+    if (installerId && installerId !== installer.installerId) {
       const idInUse = await Installer.findOne({ installerId });
       if (idInUse && idInUse._id.toString() != installer._id.toString()) {
         res.status(400);
@@ -119,7 +156,7 @@ const updateInstaller = expressAsyncHandler(
       installer.installerId = installerId;
     }
 
-    if (email) {
+    if (email && email !== installer.email) {
       const emailInUse = await Installer.findOne({ email });
       if (emailInUse && emailInUse._id.toString() != installer._id.toString()) {
         res.status(400);
@@ -129,9 +166,9 @@ const updateInstaller = expressAsyncHandler(
     }
 
     installer.storeId = storeId || installer.storeId;
-    installer.name = name || installer.name;
-    installer.company = company || installer.company;
-    if (phone != null) installer.phone = phone;
+    if (name && name !== installer.name) installer.name = name;
+    if (company && company !== installer.company) installer.company = company;
+    if (phone && phone !== installer.phone) installer.phone = phone;
 
     if (password) {
       const salt: string = await genSalt(10);
@@ -159,25 +196,27 @@ const updateInstaller = expressAsyncHandler(
 
 const deleteInstaller = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id }: { id: string } = req.body;
-    const deletedInstaller = await Installer.findOneAndUpdate(
+    const { id } = req.params;
+    const storeId = req.admin?.storeId;
+
+    const updatedInstaller = await Installer.findOneAndUpdate(
       { _id: id },
-      { deleted: true },
+      { $pull: { storeId: storeId } },
       { new: true },
     );
-    if (!deletedInstaller || !deletedInstaller.deleted) {
+    if (!updatedInstaller) {
       res.status(400);
-      throw new Error('Error al intentar borrar al instalador');
+      throw new Error('Instalador no encontrado');
     }
     res.status(200).json({
-      message: 'Instalador borrado correctamente',
+      message: 'Se eliminó de la tienda al instalador correctamente',
       installer: {
-        id: deletedInstaller._id,
-        installerId: deletedInstaller.installerId,
-        name: deletedInstaller.name,
-        email: deletedInstaller.email,
-        phone: deletedInstaller.phone,
-        company: deletedInstaller.company,
+        id: updatedInstaller._id,
+        installerId: updatedInstaller.installerId,
+        name: updatedInstaller.name,
+        email: updatedInstaller.email,
+        phone: updatedInstaller.phone,
+        company: updatedInstaller.company,
       },
       error: false,
     });
@@ -214,16 +253,17 @@ const findInstallers = expressAsyncHandler(
     }
 
     const stores = await Store.find(storeQuery);
-    const storesIds = stores.map((store) => store._id);
-
+    const storesIds = stores.map((store) => store._id.toString());
     const installers = await Installer.find({
       storeId: { $in: storesIds },
-      deleted: false,
-    }).select('-password');
+    })
+      .populate({ path: 'storeId', select: '_id numStore name' })
+      .select('-password -createdAt -updatedAt -__v');
 
     res.status(200).json({
       error: false,
       installers,
+      message: 'Instaladores encontrados',
     });
   },
 );
@@ -234,4 +274,5 @@ export {
   deleteInstaller,
   findInstallers,
   login,
+  addExistingInstaller,
 };

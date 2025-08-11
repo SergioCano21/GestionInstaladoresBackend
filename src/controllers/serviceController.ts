@@ -3,7 +3,6 @@ import expressAsyncHandler from 'express-async-handler';
 import Service from '../models/serviceModel';
 import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
 import Store from '../models/storeModel';
-import mongoose from 'mongoose';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -110,85 +109,61 @@ const createService = expressAsyncHandler(
 );
 
 const findService = expressAsyncHandler(async (req: Request, res: Response) => {
+  const { status } = req.params;
   const admin = req.admin;
   const installer = req.installer;
 
+  if (!status || (status !== 'active' && status !== 'completed')) {
+    res.status(400);
+    throw new Error('Error al pasar el status como parametro');
+  }
+
+  const statusMap = {
+    active: ['To Do', 'Doing'],
+    completed: ['Done', 'Canceled'],
+  };
+
+  let query: any = { deleted: false, status: { $in: statusMap[status] } };
+
   if (admin) {
     if (admin.role == 'local') {
-      const services = await Service.find({
-        storeId: admin.storeId,
-        deleted: false,
-      })
-        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
-        .populate([
-          { path: 'installerId', select: 'installerId name' },
-          { path: 'storeId', select: 'numStore name' },
-        ]);
-      res.status(200).json({
-        error: false,
-        message: 'Servicios encontrados',
-        services,
-      });
+      query.storeId = admin.storeId;
     } else if (admin.role == 'district') {
       const stores = await Store.find({ district: admin.district }).select(
         '_id',
       );
       const storesIds = stores.map((store) => store._id);
-      const services = await Service.find({
-        storeId: { $in: storesIds },
-        deleted: false,
-      })
-        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
-        .populate([
-          { path: 'installerId', select: 'installerId name' },
-          { path: 'storeId', select: 'numStore name' },
-        ]);
-      res.status(200).json({
-        error: false,
-        message: 'Servicios encontrados',
-        services,
-      });
+      query.storeId = { $in: storesIds };
     } else {
       const stores = await Store.find({ country: admin.country }).select('_id');
       const storesIds = stores.map((store) => store._id);
-      const services = await Service.find({
-        storeId: { $in: storesIds },
-        deleted: false,
-      })
-        .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
-        .populate([
-          { path: 'installerId', select: 'installerId name' },
-          { path: 'storeId', select: 'numStore name' },
-        ]);
-      res.status(200).json({
-        error: false,
-        message: 'Servicios encontrados',
-        services,
-      });
+      query.storeId = { $in: storesIds };
     }
   } else {
     if (!installer?.installerId) {
       res.status(400);
       throw new Error('Falta el id del instalador');
     }
-    const services = await Service.find({ installerId: installer._id })
-      .select('-_id -deleted -adminId -deleted -updatedAt -createdAt -__v')
-      .populate([
-        { path: 'installerId', select: 'installerId name' },
-        { path: 'storeId', select: 'numStore name' },
-      ]);
-    res.status(200).json({
-      error: false,
-      message: 'Servicios encontrados',
-      services,
-    });
+    query.installerId = installer._id;
   }
+
+  const services = await Service.find(query)
+    .select('-adminId -deleted -updatedAt -createdAt -__v')
+    .populate([
+      { path: 'installerId', select: '_id installerId name' },
+      { path: 'storeId', select: '_id numStore name' },
+    ]);
+
+  res.status(200).json({
+    error: false,
+    message: 'Servicios encontrados',
+    services,
+  });
 });
 
 const updateService = expressAsyncHandler(
   async (req: Request, res: Response) => {
     const {
-      id,
       folio,
       client,
       clientPhone,
@@ -196,16 +171,9 @@ const updateService = expressAsyncHandler(
       jobDetails,
       additionalComments,
       installerId,
-    }: {
-      id: string;
-      folio: number;
-      client: string;
-      clientPhone: string;
-      address: string;
-      jobDetails: IJobDetails[];
-      additionalComments: string | null;
-      installerId: string;
     } = req.body;
+
+    const { id } = req.params;
 
     const service = await Service.findOne({ _id: id, deleted: false });
 
@@ -214,7 +182,7 @@ const updateService = expressAsyncHandler(
       throw new Error('No se encontró el servicio');
     }
 
-    if (folio) {
+    if (folio && folio !== service.folio) {
       const folioInUse = await Service.findOne({ folio });
       if (folioInUse && folioInUse._id.toString() != service._id.toString()) {
         res.status(400);
@@ -223,22 +191,23 @@ const updateService = expressAsyncHandler(
       service.folio = folio;
     }
 
-    service.client = client || service.client;
-    service.clientPhone = clientPhone || service.clientPhone;
-    service.address = address || service.address;
-    service.additionalComments =
-      additionalComments || service.additionalComments;
+    if (client && client !== service.client) service.client = client;
+    if (clientPhone && clientPhone !== service.clientPhone)
+      service.clientPhone = clientPhone;
+    if (address && address !== service.address) service.address = address;
+    if (additionalComments && additionalComments !== service.additionalComments)
+      service.additionalComments = additionalComments;
 
-    if (installerId) {
-      service.installerId = new mongoose.Types.ObjectId(installerId);
+    if (installerId && installerId !== service.installerId.toString()) {
+      service.installerId = installerId;
     }
 
-    if (jobDetails) {
+    if (jobDetails && jobDetails !== service.jobDetails) {
       let installationServiceFee: number = 0;
       let commissionFee: number = 0;
       let installerPayment: number = 0;
 
-      jobDetails.forEach((jobDetail) => {
+      jobDetails.forEach((jobDetail: IJobDetails) => {
         jobDetail.commissionFee =
           Math.floor(jobDetail.installationServiceFee * 0.2 * 100) / 100;
         jobDetail.installerPayment =
@@ -272,7 +241,7 @@ const updateService = expressAsyncHandler(
         installerPayment: subtotals.installerPayment + iva.installerPayment,
       };
 
-      service.jobDetails = jobDetails || service.jobDetails;
+      service.jobDetails = jobDetails;
       service.subtotals = subtotals;
       service.iva = iva;
       service.totals = totals;
@@ -290,25 +259,54 @@ const updateService = expressAsyncHandler(
 
 const deleteService = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id }: { id: string } = req.body;
+    const { id } = req.params;
 
     const deletedService = await Service.findOneAndUpdate(
       { _id: id },
-      { deleted: true },
+      { status: 'Canceled' },
       { new: true },
     );
 
-    if (!deletedService || !deletedService.deleted) {
+    if (!deletedService || deletedService.status !== 'Canceled') {
       res.status(400);
-      throw new Error('Error al intentar borrar al instalador');
+      throw new Error('Error al intentar eliminar el servicio');
     }
 
     res.status(200).json({
       error: false,
-      message: 'Servicio borrado correctamente',
+      message: 'Servicio eliminado correctamente',
       service: deletedService,
     });
   },
 );
 
-export { createService, findService, updateService, deleteService };
+const restoreService = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const { id } = req.params;
+
+    const restoredService = await Service.findOneAndUpdate(
+      { _id: id },
+      { status: 'To Do' },
+      { new: true },
+    );
+
+    if (!restoredService || restoredService.status !== 'To Do') {
+      res.status(400);
+      throw new Error('Error al intentar restaurar el servicio');
+    }
+
+    res.status(200).json({
+      error: false,
+      message: 'Servicio restaurado correctamente',
+      service: restoredService,
+    });
+  },
+);
+
+export {
+  createService,
+  findService,
+  updateService,
+  deleteService,
+  restoreService,
+};

@@ -5,6 +5,7 @@ import {
   protect,
 } from '../middlewares/authenticationMiddleware';
 import {
+  addExistingInstaller,
   createInstaller,
   deleteInstaller,
   findInstallers,
@@ -16,8 +17,15 @@ const routerInstaller = express.Router();
 
 routerInstaller.get('/', protect, isAdmin, findInstallers);
 routerInstaller.post('/', protect, isAdmin, isRoleLocal, createInstaller);
-routerInstaller.put('/', protect, isAdmin, isRoleLocal, updateInstaller);
-routerInstaller.delete('/', protect, isAdmin, isRoleLocal, deleteInstaller);
+routerInstaller.put('/:id', protect, isAdmin, isRoleLocal, updateInstaller);
+routerInstaller.delete('/:id', protect, isAdmin, isRoleLocal, deleteInstaller);
 routerInstaller.post('/login', login);
+routerInstaller.post(
+  '/addExisting',
+  protect,
+  isAdmin,
+  isRoleLocal,
+  addExistingInstaller,
+);
 
 export default routerInstaller;

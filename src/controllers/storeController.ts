@@ -148,13 +148,13 @@ const updateStore = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('No se encontró la tienda');
   }
 
-  if (name !== undefined) store.name = name;
-  if (numStore !== undefined) store.numStore = numStore;
-  if (phone !== undefined) store.phone = phone;
-  if (address !== undefined) store.address = address;
-  if (district !== undefined) store.district = district;
-  if (state !== undefined) store.state = state;
-  if (country !== undefined) store.country = country;
+  if (name && name !== store.name) store.name = name;
+  if (numStore && numStore !== store.numStore) store.numStore = numStore;
+  if (phone && phone !== store.phone) store.phone = phone;
+  if (address && address !== store.address) store.address = address;
+  if (district && district !== store.district) store.district = district;
+  if (state && state !== store.state) store.state = state;
+  if (country && country !== state.country) store.country = country;
 
   const exists = await Store.findOne({ numStore: store.numStore });
 

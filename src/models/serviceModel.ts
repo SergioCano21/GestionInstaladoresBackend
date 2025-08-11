@@ -118,7 +118,7 @@ const ServiceSchema: Schema<IService> = new Schema(
     },
     status: {
       type: String,
-      enum: ['To Do', 'Doing', 'Done'],
+      enum: ['To Do', 'Doing', 'Done', 'Canceled'],
       required: true,
     },
     deleted: {

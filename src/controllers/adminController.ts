@@ -187,8 +187,8 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('No se encontró al administrador');
   }
 
-  if (name) admin.name = name;
-  if (role) admin.role = role;
+  if (name && name !== admin.name) admin.name = name;
+  if (role && role !== admin.role) admin.role = role;
 
   if (username && username !== admin.username) {
     const usernameInUse = await Admin.findOne({ username });

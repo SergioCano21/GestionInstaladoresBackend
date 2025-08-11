@@ -108,7 +108,7 @@ export type ScheduleEntryType = 'Service' | 'Block';
 
 export type Role = 'local' | 'district' | 'national';
 
-export type Status = 'To Do' | 'Doing' | 'Done';
+export type Status = 'To Do' | 'Doing' | 'Done' | 'Canceled';
 
 export interface AdminRequest extends Request {
   admin: IAdmin;
