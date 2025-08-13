@@ -74,7 +74,7 @@ export interface ISchedule {
   _id: Types.ObjectId;
   startTime: Date;
   endTime: Date;
-  installerId: number;
+  installerId: Types.ObjectId;
   serviceId: Types.ObjectId;
   type: ScheduleEntryType;
   description: string;
