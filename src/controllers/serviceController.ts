@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import Service from '../models/serviceModel';
 import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
-import Store from '../models/storeModel';
+import mongoose from 'mongoose';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -13,7 +13,7 @@ const createService = expressAsyncHandler(
       address,
       jobDetails,
       additionalComments,
-      installerId,
+      installer,
     }: {
       folio: number;
       client: string;
@@ -21,7 +21,11 @@ const createService = expressAsyncHandler(
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
-      installerId: string;
+      installer: {
+        _id: string;
+        installerId: number | '';
+        name: string;
+      };
     } = req.body;
 
     const adminId = req.admin?._id;
@@ -33,7 +37,7 @@ const createService = expressAsyncHandler(
       !clientPhone ||
       !address ||
       !jobDetails ||
-      !installerId
+      !installer
     ) {
       res.status(400);
       throw new Error('Faltan datos para crear el servicio');
@@ -95,7 +99,7 @@ const createService = expressAsyncHandler(
       totals,
       ...(additionalComments && { additionalComments }),
       adminId,
-      installerId,
+      installerId: installer._id,
       storeId,
       status,
     });
@@ -123,36 +127,90 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     completed: ['Done', 'Canceled'],
   };
 
-  let query: any = { deleted: false, status: { $in: statusMap[status] } };
+  const services = await Service.aggregate([
+    // First filter based on active or completed services
+    {
+      $match: {
+        deleted: false,
+        status: { $in: statusMap[status] },
+      },
+    },
 
-  if (admin) {
-    if (admin.role == 'local') {
-      query.storeId = admin.storeId;
-    } else if (admin.role == 'district') {
-      const stores = await Store.find({ district: admin.district }).select(
-        '_id',
-      );
-      const storesIds = stores.map((store) => store._id);
-      query.storeId = { $in: storesIds };
-    } else {
-      const stores = await Store.find({ country: admin.country }).select('_id');
-      const storesIds = stores.map((store) => store._id);
-      query.storeId = { $in: storesIds };
-    }
-  } else {
-    if (!installer?.installerId) {
-      res.status(400);
-      throw new Error('Falta el id del instalador');
-    }
-    query.installerId = installer._id;
-  }
+    // Bring Installer data
+    {
+      $lookup: {
+        from: 'installers',
+        localField: 'installerId',
+        foreignField: '_id',
+        as: 'installer',
+      },
+    },
+    { $unwind: '$installer' },
 
-  const services = await Service.find(query)
-    .select('-adminId -deleted -updatedAt -createdAt -__v')
-    .populate([
-      { path: 'installerId', select: '_id installerId name' },
-      { path: 'storeId', select: '_id numStore name' },
-    ]);
+    // Bring Store data
+    {
+      $lookup: {
+        from: 'stores',
+        localField: 'storeId',
+        foreignField: '_id',
+        as: 'store',
+      },
+    },
+    { $unwind: '$store' },
+
+    // Second filter based on role
+    ...(admin?.role === 'district'
+      ? [{ $match: { 'store.district': admin.district } }]
+      : admin?.role === 'national'
+        ? [{ $match: { 'store.country': admin.country } }]
+        : admin?.role === 'local'
+          ? [{ $match: { storeId: admin.storeId } }]
+          : installer
+            ? [{ $match: { installerId: installer._id } }]
+            : []),
+
+    // Bring Schedule data
+    {
+      $lookup: {
+        from: 'schedules',
+        localField: '_id',
+        foreignField: 'serviceId',
+        as: 'schedule',
+      },
+    },
+    { $unwind: { path: '$schedule', preserveNullAndEmptyArrays: true } },
+
+    // Retrieve only necessary data
+    {
+      $project: {
+        _id: 1,
+        folio: 1,
+        client: 1,
+        status: 1,
+        description: 1,
+        clientPhone: 1,
+        address: 1,
+        additionalComments: 1,
+        jobDetails: 1,
+        subtotals: 1,
+        iva: 1,
+        totals: 1,
+        installer: {
+          _id: '$installer._id',
+          installerId: '$installer.installerId',
+          name: '$installer.name',
+        },
+        store: {
+          numStore: '$store.numStore',
+          name: '$store.name',
+        },
+        schedule: {
+          startTime: '$schedule.startTime',
+          endTime: '$schedule.endTime',
+        },
+      },
+    },
+  ]);
 
   res.status(200).json({
     error: false,
@@ -170,7 +228,19 @@ const updateService = expressAsyncHandler(
       address,
       jobDetails,
       additionalComments,
-      installerId,
+      installer,
+    }: {
+      folio: number;
+      client: string;
+      clientPhone: string;
+      address: string;
+      jobDetails: IJobDetails[];
+      additionalComments: string | null;
+      installer: {
+        _id: string;
+        installerId: number | '';
+        name: string;
+      };
     } = req.body;
 
     const { id } = req.params;
@@ -198,8 +268,8 @@ const updateService = expressAsyncHandler(
     if (additionalComments && additionalComments !== service.additionalComments)
       service.additionalComments = additionalComments;
 
-    if (installerId && installerId !== service.installerId.toString()) {
-      service.installerId = installerId;
+    if (installer && installer._id !== service.installerId.toString()) {
+      service.installerId = new mongoose.Types.ObjectId(installer._id);
     }
 
     if (jobDetails && jobDetails !== service.jobDetails) {

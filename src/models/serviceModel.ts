@@ -23,6 +23,7 @@ const ServiceSchema: Schema<IService> = new Schema(
     jobDetails: {
       type: [
         {
+          _id: false,
           quantity: {
             type: Number,
             required: true,
@@ -48,54 +49,63 @@ const ServiceSchema: Schema<IService> = new Schema(
       required: true,
     },
     subtotals: {
-      type: {
-        installationServiceFee: {
-          type: Number,
-          required: true,
+      type: new Schema(
+        {
+          installationServiceFee: {
+            type: Number,
+            required: true,
+          },
+          commissionFee: {
+            type: Number,
+            required: true,
+          },
+          installerPayment: {
+            type: Number,
+            required: true,
+          },
         },
-        commissionFee: {
-          type: Number,
-          required: true,
-        },
-        installerPayment: {
-          type: Number,
-          required: true,
-        },
-      },
+        { _id: false },
+      ),
       required: true,
     },
     iva: {
-      type: {
-        installationServiceFee: {
-          type: Number,
-          required: true,
+      type: new Schema(
+        {
+          installationServiceFee: {
+            type: Number,
+            required: true,
+          },
+          commissionFee: {
+            type: Number,
+            required: true,
+          },
+          installerPayment: {
+            type: Number,
+            required: true,
+          },
         },
-        commissionFee: {
-          type: Number,
-          required: true,
-        },
-        installerPayment: {
-          type: Number,
-          required: true,
-        },
-      },
+        { _id: false },
+      ),
       required: true,
     },
     totals: {
-      type: {
-        installationServiceFee: {
-          type: Number,
-          required: true,
+      type: new Schema(
+        {
+          installationServiceFee: {
+            type: Number,
+            required: true,
+          },
+          commissionFee: {
+            type: Number,
+            required: true,
+          },
+          installerPayment: {
+            type: Number,
+            required: true,
+          },
         },
-        commissionFee: {
-          type: Number,
-          required: true,
-        },
-        installerPayment: {
-          type: Number,
-          required: true,
-        },
-      },
+        { _id: false },
+      ),
       required: true,
     },
     additionalComments: {
