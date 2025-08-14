@@ -1,7 +1,6 @@
 import { Request, Response } from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import { ScheduleEntryType } from '../types/models';
-import Installer from '../models/installerModel';
 import Schedule from '../models/scheduleModel';
 import mongoose from 'mongoose';
 import Service from '../models/serviceModel';
@@ -29,17 +28,6 @@ const createSchedule = expressAsyncHandler(
       throw new Error('Faltan datos para crear el calendario');
     }
 
-    const service = await Service.findById(serviceId).select('installerId');
-    if (!service) {
-      res.status(400);
-      throw new Error('No se encontró el servicio');
-    }
-    if (!service.installerId) {
-      res.status(400);
-      throw new Error('El servicio no tiene un instalador asignado');
-    }
-
-    const installerId = service.installerId;
     const startDateTime = new Date(`${date}T${startTime}`);
     const endDateTime = new Date(`${date}T${endTime}`);
 
@@ -53,15 +41,59 @@ const createSchedule = expressAsyncHandler(
       throw new Error('La hora de inicio debe ser anterior a la hora de fin');
     }
 
-    const hasConflict = await Schedule.findOne({
-      installerId,
-      $and: [
-        { startTime: { $lt: endDateTime } },
-        { endTime: { $gt: startDateTime } },
-      ],
-    });
+    const result = await Service.aggregate([
+      // Find specific service by ID
+      { $match: { _id: new mongoose.Types.ObjectId(serviceId) } },
 
-    if (hasConflict) {
+      // Verify if there are conflicts with the schedule
+      {
+        $lookup: {
+          from: 'schedules',
+          let: { installerId: '$installerId', serviceId: '$_id' },
+          pipeline: [
+            {
+              $lookup: {
+                from: 'services',
+                localField: 'serviceId',
+                foreignField: '_id',
+                as: 'service',
+              },
+            },
+            { $unwind: '$service' },
+            {
+              $match: {
+                $expr: {
+                  $and: [
+                    { $eq: ['$service.installerId', '$$installerId'] },
+                    { $ne: ['$serviceId', '$$serviceId'] },
+                  ],
+                },
+                startTime: { $lt: endDateTime },
+                endTime: { $gt: startDateTime },
+              },
+            },
+            { $limit: 1 }, // Only need one to check if there are conflicts
+            { $project: { _id: 1 } },
+          ],
+          as: 'conflicts',
+        },
+      },
+
+      // Project only necessary fields
+      {
+        $project: {
+          installerId: 1,
+          hasConflicts: { $gt: [{ $size: '$conflicts' }, 0] },
+        },
+      },
+    ]);
+
+    if (!result.length) {
+      res.status(400);
+      throw new Error('No se encontró el servicio');
+    }
+
+    if (result[0].hasConflicts) {
       res.status(400);
       throw new Error(
         'El horario del instalador choca con otro horario establecido',
@@ -72,7 +104,6 @@ const createSchedule = expressAsyncHandler(
       startTime: startDateTime,
       endTime: endDateTime,
       type,
-      installerId,
       serviceId,
       ...(description && { description }),
     });
@@ -88,16 +119,16 @@ const createSchedule = expressAsyncHandler(
 const updateSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
     const {
+      date,
       startTime,
       endTime,
-      installerId,
       type,
       serviceId,
       description,
     }: {
-      startTime: Date;
-      endTime: Date;
-      installerId: string;
+      date: string;
+      startTime: string;
+      endTime: string;
       type: ScheduleEntryType;
       serviceId: string;
       description: string;
@@ -111,35 +142,72 @@ const updateSchedule = expressAsyncHandler(
       throw new Error('No se encontró el horario');
     }
 
-    if (installerId && installerId !== schedule.installerId.toString()) {
-      const installerExists = await Installer.findOne({
-        installerId,
+    let serviceForConflictCheck = schedule.serviceId;
+
+    if (serviceId && serviceId !== schedule.serviceId.toString()) {
+      const serviceExist = await Service.findOne({
+        _id: serviceId,
+        deleted: false,
       });
 
-      if (!installerExists) {
+      if (!serviceExist) {
         res.status(400);
-        throw new Error('No existe el instalador');
+        throw new Error('No se encontró el servicio');
       }
-
-      schedule.installerId = new mongoose.Types.ObjectId(installerId);
+      schedule.serviceId = new mongoose.Types.ObjectId(serviceId);
+      serviceForConflictCheck = new mongoose.Types.ObjectId(serviceId);
     }
 
+    const startDateTime = new Date(`${date}T${startTime}`);
+    const endDateTime = new Date(`${date}T${endTime}`);
+
     if (
-      (startTime && startTime !== schedule.startTime) ||
-      (endTime && endTime !== schedule.endTime)
+      (startTime && startDateTime !== schedule.startTime) ||
+      (endTime && endDateTime !== schedule.endTime)
     ) {
-      schedule.startTime = startTime || schedule.startTime;
-      schedule.endTime = endTime || schedule.endTime;
+      if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+        res.status(400);
+        throw new Error('Formato de fecha u hora inválido');
+      }
 
-      const hasConflict = await Schedule.findOne({
-        installerId: schedule.installerId,
-        $and: [
-          { startTime: { $lt: new Date(schedule.endTime) } },
-          { endTime: { $gt: new Date(schedule.startTime) } },
-        ],
-      });
+      if (startDateTime >= endDateTime) {
+        res.status(400);
+        throw new Error('La hora de inicio debe ser anterior a la hora de fin');
+      }
+      schedule.startTime = startDateTime;
+      schedule.endTime = endDateTime;
 
-      if (hasConflict) {
+      const currentService = await Service.findById(serviceForConflictCheck)
+        .select('installerId')
+        .lean();
+      if (!currentService) {
+        res.status(400);
+        throw new Error('No se encontró el servicio');
+      }
+
+      const hasConflict = await Schedule.aggregate([
+        {
+          $lookup: {
+            from: 'services',
+            localField: 'serviceId',
+            foreignField: '_id',
+            as: 'service',
+          },
+        },
+        { $unwind: '$service' },
+        {
+          $match: {
+            'service.installerId': currentService.installerId,
+            startTime: { $lt: new Date(schedule.endTime) },
+            endTime: { $gt: new Date(schedule.startTime) },
+            _id: { $ne: new mongoose.Types.ObjectId(id) },
+          },
+        },
+        { $limit: 1 },
+        { $project: { _id: 1 } },
+      ]);
+
+      if (hasConflict.length > 0) {
         res.status(400);
         throw new Error(
           'El horario del instalador choca con otro horario establecido',
@@ -147,26 +215,23 @@ const updateSchedule = expressAsyncHandler(
       }
     }
 
-    if (serviceId && serviceId !== schedule.serviceId.toString()) {
-      const service = await Service.findOne({ _id: serviceId, deleted: false });
-
-      if (!service) {
-        res.status(400);
-        throw new Error('No se encontró el servicio');
-      }
-
-      schedule.serviceId = new mongoose.Types.ObjectId(serviceId);
-    }
-
     if (type && type !== schedule.type) schedule.type = type;
     if (description && description !== schedule.description)
       schedule.description = description;
+
+    await schedule.save();
+
+    res.status(200).json({
+      error: false,
+      message: 'Horario actualizado correctamente',
+      schedule,
+    });
   },
 );
 
 const deleteSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
-    const { id }: { id: string } = req.body;
+    const { id } = req.params;
 
     const schedule = await Schedule.findByIdAndDelete(id);
 
@@ -187,8 +252,8 @@ const findSchedule = expressAsyncHandler(
     const admin = req.admin;
     const installer = req.installer;
 
+    let matchCondition: any = {};
     if (admin) {
-      let matchCondition: any = {};
       switch (admin.role) {
         case 'local':
           if (!admin.storeId) {
@@ -223,88 +288,83 @@ const findSchedule = expressAsyncHandler(
           res.status(400);
           throw new Error('Error al buscar calendario');
       }
-
-      const schedules = await Schedule.aggregate([
-        {
-          $lookup: {
-            from: 'services',
-            localField: 'serviceId',
-            foreignField: '_id',
-            as: 'service',
-          },
-        },
-        {
-          $unwind: '$service',
-        },
-        {
-          $lookup: {
-            from: 'stores',
-            localField: 'service.storeId',
-            foreignField: '_id',
-            as: 'store',
-          },
-        },
-        {
-          $unwind: '$store',
-        },
-        {
-          $lookup: {
-            from: 'installers',
-            localField: 'installerId',
-            foreignField: '_id',
-            as: 'installer',
-          },
-        },
-        {
-          $unwind: '$installer',
-        },
-        {
-          $match: matchCondition,
-        },
-        {
-          $project: {
-            _id: 1,
-            startTime: 1,
-            endTime: 1,
-            type: 1,
-            service: {
-              _id: '$service._id',
-              folio: '$service.folio',
-              status: '$service.status',
-              client: '$service.client',
-            },
-            installer: {
-              _id: '$installer._id',
-              name: '$installer.name',
-            },
-            store: {
-              _id: '$store._id',
-              name: '$store.name',
-              numStore: '$store.numStore',
-            },
-          },
-        },
-      ]);
-
-      res.status(200).json({
-        error: false,
-        message: 'Horarios encontrados',
-        schedules,
-      });
     } else {
-      if (!installer?.installerId) {
+      if (!installer) {
         res.status(400);
         throw new Error('Falta el id del instalador');
       }
-      const schedules = await Schedule.find({
-        installerId: installer._id,
-      }).populate('serviceId');
-      res.status(200).json({
-        error: false,
-        message: 'Horarios encontrados',
-        schedules,
-      });
+      matchCondition = {
+        'installer._id': new mongoose.Types.ObjectId(installer._id),
+      };
     }
+
+    const schedules = await Schedule.aggregate([
+      {
+        $lookup: {
+          from: 'services',
+          localField: 'serviceId',
+          foreignField: '_id',
+          as: 'service',
+        },
+      },
+      {
+        $unwind: '$service',
+      },
+      {
+        $lookup: {
+          from: 'stores',
+          localField: 'service.storeId',
+          foreignField: '_id',
+          as: 'store',
+        },
+      },
+      {
+        $unwind: '$store',
+      },
+      {
+        $lookup: {
+          from: 'installers',
+          localField: 'service.installerId',
+          foreignField: '_id',
+          as: 'installer',
+        },
+      },
+      {
+        $unwind: '$installer',
+      },
+      {
+        $match: matchCondition,
+      },
+      {
+        $project: {
+          _id: 1,
+          startTime: 1,
+          endTime: 1,
+          type: 1,
+          serviceId: 1,
+          service: {
+            folio: '$service.folio',
+            status: '$service.status',
+            client: '$service.client',
+          },
+          installer: {
+            _id: '$installer._id',
+            name: '$installer.name',
+          },
+          store: {
+            _id: '$store._id',
+            name: '$store.name',
+            numStore: '$store.numStore',
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      error: false,
+      message: 'Horarios encontrados',
+      schedules,
+    });
   },
 );
 

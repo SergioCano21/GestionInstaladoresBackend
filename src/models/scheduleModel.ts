@@ -11,11 +11,6 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
       type: Date,
       required: true,
     },
-    installerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Installer',
-      required: true,
-    },
     serviceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Service',
