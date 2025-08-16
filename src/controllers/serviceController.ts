@@ -13,7 +13,7 @@ const createService = expressAsyncHandler(
       address,
       jobDetails,
       additionalComments,
-      installer,
+      installerId,
     }: {
       folio: number;
       client: string;
@@ -21,11 +21,7 @@ const createService = expressAsyncHandler(
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
-      installer: {
-        _id: string;
-        installerId: number | '';
-        name: string;
-      };
+      installerId: string;
     } = req.body;
 
     const adminId = req.admin?._id;
@@ -37,7 +33,7 @@ const createService = expressAsyncHandler(
       !clientPhone ||
       !address ||
       !jobDetails ||
-      !installer
+      !installerId
     ) {
       res.status(400);
       throw new Error('Faltan datos para crear el servicio');
@@ -99,7 +95,7 @@ const createService = expressAsyncHandler(
       totals,
       ...(additionalComments && { additionalComments }),
       adminId,
-      installerId: installer._id,
+      installerId,
       storeId,
       status,
     });
@@ -195,8 +191,8 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
         subtotals: 1,
         iva: 1,
         totals: 1,
+        installerId: '$installer._id',
         installer: {
-          _id: '$installer._id',
           installerId: '$installer.installerId',
           name: '$installer.name',
         },
@@ -228,7 +224,7 @@ const updateService = expressAsyncHandler(
       address,
       jobDetails,
       additionalComments,
-      installer,
+      installerId,
     }: {
       folio: number;
       client: string;
@@ -236,11 +232,7 @@ const updateService = expressAsyncHandler(
       address: string;
       jobDetails: IJobDetails[];
       additionalComments: string | null;
-      installer: {
-        _id: string;
-        installerId: number | '';
-        name: string;
-      };
+      installerId: string;
     } = req.body;
 
     const { id } = req.params;
@@ -268,8 +260,8 @@ const updateService = expressAsyncHandler(
     if (additionalComments && additionalComments !== service.additionalComments)
       service.additionalComments = additionalComments;
 
-    if (installer && installer._id !== service.installerId.toString()) {
-      service.installerId = new mongoose.Types.ObjectId(installer._id);
+    if (installerId && installerId !== service.installerId.toString()) {
+      service.installerId = new mongoose.Types.ObjectId(installerId);
     }
 
     if (jobDetails && jobDetails !== service.jobDetails) {
