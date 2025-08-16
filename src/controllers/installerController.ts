@@ -252,13 +252,14 @@ const findInstallers = expressAsyncHandler(
         throw new Error('Rol inválido');
     }
 
-    const stores = await Store.find(storeQuery);
+    const stores = await Store.find(storeQuery).lean();
     const storesIds = stores.map((store) => store._id.toString());
     const installers = await Installer.find({
       storeId: { $in: storesIds },
     })
       .populate({ path: 'storeId', select: '_id numStore name' })
-      .select('-password -createdAt -updatedAt -__v');
+      .select('-password -createdAt -updatedAt -__v')
+      .lean();
 
     res.status(200).json({
       error: false,

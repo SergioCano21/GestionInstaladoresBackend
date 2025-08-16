@@ -105,7 +105,7 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
         throw new Error('Rol inválido');
     }
 
-    const stores = await Store.find(query);
+    const stores = await Store.find(query).lean();
 
     if (!stores.length) {
       res.status(404);
@@ -122,7 +122,7 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
       res.status(400);
       throw new Error('No se encontró el instalador');
     }
-    const stores = await Store.find({ _id: { $in: installer.storeId } });
+    const stores = await Store.find({ _id: { $in: installer.storeId } }).lean();
     res.status(200).json({
       error: false,
       message: 'Tiendas encontradas',

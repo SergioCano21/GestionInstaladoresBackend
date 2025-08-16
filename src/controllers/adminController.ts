@@ -308,7 +308,8 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
 
   const admins = await Admin.find(adminQuery)
     .populate({ path: 'storeId', select: '_id numStore name' })
-    .select('-password -createdAt -updatedAt -__v');
+    .select('-password -createdAt -updatedAt -__v')
+    .lean();
 
   res.status(200).json({
     error: false,
