@@ -123,6 +123,62 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     completed: ['Done', 'Canceled'],
   };
 
+  let projectStage: any = {
+    _id: 1,
+    folio: 1,
+    client: 1,
+    status: 1,
+    description: 1,
+    clientPhone: 1,
+    address: 1,
+    additionalComments: 1,
+    store: {
+      numStore: '$store.numStore',
+      name: '$store.name',
+    },
+    schedule: {
+      startTime: '$schedule.startTime',
+      endTime: '$schedule.endTime',
+    },
+  };
+
+  if (admin) {
+    projectStage = {
+      ...projectStage,
+      jobDetails: 1,
+      subtotals: 1,
+      iva: 1,
+      totals: 1,
+      installerId: '$installer._id',
+      installer: {
+        installerId: '$installer.installerId',
+        name: '$installer.name',
+      },
+    };
+  }
+  if (installer) {
+    projectStage = {
+      ...projectStage,
+      store: {
+        ...projectStage.store,
+        phone: '$store.phone',
+      },
+      totals: {
+        installerPayment: '$totals.installerPayment',
+      },
+      jobDetails: {
+        $map: {
+          input: '$jobDetails',
+          as: 'detail',
+          in: {
+            quantity: '$$detail.quantity',
+            description: '$$detail.description',
+          },
+        },
+      },
+    };
+  }
+
   const services = await Service.aggregate([
     // First filter based on active or completed services
     {
@@ -177,35 +233,7 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     { $unwind: { path: '$schedule', preserveNullAndEmptyArrays: true } },
 
     // Retrieve only necessary data
-    {
-      $project: {
-        _id: 1,
-        folio: 1,
-        client: 1,
-        status: 1,
-        description: 1,
-        clientPhone: 1,
-        address: 1,
-        additionalComments: 1,
-        jobDetails: 1,
-        subtotals: 1,
-        iva: 1,
-        totals: 1,
-        installerId: '$installer._id',
-        installer: {
-          installerId: '$installer.installerId',
-          name: '$installer.name',
-        },
-        store: {
-          numStore: '$store.numStore',
-          name: '$store.name',
-        },
-        schedule: {
-          startTime: '$schedule.startTime',
-          endTime: '$schedule.endTime',
-        },
-      },
-    },
+    { $project: projectStage },
   ]);
 
   res.status(200).json({
@@ -225,6 +253,7 @@ const updateService = expressAsyncHandler(
       jobDetails,
       additionalComments,
       installerId,
+      status,
     }: {
       folio: number;
       client: string;
@@ -233,6 +262,7 @@ const updateService = expressAsyncHandler(
       jobDetails: IJobDetails[];
       additionalComments: string | null;
       installerId: string;
+      status: Status;
     } = req.body;
 
     const { id } = req.params;
@@ -263,6 +293,8 @@ const updateService = expressAsyncHandler(
     if (installerId && installerId !== service.installerId.toString()) {
       service.installerId = new mongoose.Types.ObjectId(installerId);
     }
+
+    if (status && status !== service.status) service.status = status;
 
     if (jobDetails && jobDetails !== service.jobDetails) {
       let installationServiceFee: number = 0;

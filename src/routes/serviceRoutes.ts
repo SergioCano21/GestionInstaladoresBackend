@@ -2,6 +2,7 @@ import express, { Router } from 'express';
 import {
   isAdmin,
   isRoleLocal,
+  isRoleLocalAndInstaller,
   protect,
 } from '../middlewares/authenticationMiddleware';
 import {
@@ -16,7 +17,7 @@ const routerService: Router = express.Router();
 
 routerService.get('/:status', protect, findService);
 routerService.post('/', protect, isAdmin, isRoleLocal, createService);
-routerService.put('/:id', protect, isAdmin, isRoleLocal, updateService);
+routerService.put('/:id', protect, isRoleLocalAndInstaller, updateService);
 routerService.delete('/:id', protect, isAdmin, isRoleLocal, deleteService);
 routerService.put(
   '/:id/restore',

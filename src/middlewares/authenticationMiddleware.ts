@@ -103,4 +103,23 @@ const isRoleDistrictOrNational = expressAsyncHandler(
   },
 );
 
-export { protect, isAdmin, isRoleLocal, isRoleDistrictOrNational, isInstaller };
+const isRoleLocalAndInstaller = expressAsyncHandler(
+  (req: Request, res: Response, next: NextFunction) => {
+    if (req.admin?.role != 'local' && !req.installer) {
+      res.status(401);
+      throw new Error(
+        'Solo administradores con rol local o instaladores pueden realizar modificaciones',
+      );
+    }
+    next();
+  },
+);
+
+export {
+  protect,
+  isAdmin,
+  isRoleLocal,
+  isRoleDistrictOrNational,
+  isInstaller,
+  isRoleLocalAndInstaller,
+};

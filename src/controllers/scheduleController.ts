@@ -298,6 +298,41 @@ const findSchedule = expressAsyncHandler(
       };
     }
 
+    let projectStage: any = {};
+    if (admin) {
+      projectStage = {
+        _id: 1,
+        startTime: 1,
+        endTime: 1,
+        type: 1,
+        serviceId: 1,
+        service: {
+          folio: '$service.folio',
+          status: '$service.status',
+          client: '$service.client',
+        },
+        installer: {
+          _id: '$installer._id',
+          name: '$installer.name',
+        },
+        store: {
+          _id: '$store._id',
+          name: '$store.name',
+          numStore: '$store.numStore',
+        },
+      };
+    }
+    if (installer) {
+      projectStage = {
+        _id: 1,
+        startTime: 1,
+        endTime: 1,
+        folio: '$service.folio',
+        address: '$service.address',
+        type: 1,
+      };
+    }
+
     const schedules = await Schedule.aggregate([
       {
         $lookup: {
@@ -336,27 +371,7 @@ const findSchedule = expressAsyncHandler(
         $match: matchCondition,
       },
       {
-        $project: {
-          _id: 1,
-          startTime: 1,
-          endTime: 1,
-          type: 1,
-          serviceId: 1,
-          service: {
-            folio: '$service.folio',
-            status: '$service.status',
-            client: '$service.client',
-          },
-          installer: {
-            _id: '$installer._id',
-            name: '$installer.name',
-          },
-          store: {
-            _id: '$store._id',
-            name: '$store.name',
-            numStore: '$store.numStore',
-          },
-        },
+        $project: projectStage,
       },
     ]);
 

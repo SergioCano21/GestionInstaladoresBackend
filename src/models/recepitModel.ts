@@ -27,7 +27,7 @@ const ReceiptSchema: Schema<IReceipt> = new Schema(
             required: true,
           },
           quantity: {
-            type: String,
+            type: Number,
             required: true,
           },
           specification: {

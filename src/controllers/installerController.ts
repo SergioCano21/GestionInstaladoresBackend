@@ -261,6 +261,55 @@ const findInstallers = expressAsyncHandler(
   },
 );
 
+const findInstallerProfile = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const installer = req.installer;
+
+    if (!installer) {
+      res.status(403);
+      throw new Error('Acceso no autorizado');
+    }
+
+    const installerInfo = await Installer.aggregate([
+      {
+        $match: {
+          _id: installer._id,
+        },
+      },
+      {
+        $lookup: {
+          from: 'stores',
+          localField: 'storeId',
+          foreignField: '_id',
+          as: 'stores',
+        },
+      },
+      {
+        $project: {
+          _id: 0,
+          installerId: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          company: 1,
+          stores: {
+            numStore: 1,
+            name: 1,
+            phone: 1,
+            address: 1,
+          },
+        },
+      },
+    ]);
+
+    res.status(200).json({
+      error: false,
+      installer: installerInfo[0],
+      message: 'Perfil encontrado',
+    });
+  },
+);
+
 export {
   createInstaller,
   updateInstaller,
@@ -268,4 +317,5 @@ export {
   findInstallers,
   login,
   addExistingInstaller,
+  findInstallerProfile,
 };
