@@ -15,6 +15,117 @@ const createSchedule = expressAsyncHandler(
       serviceId,
       description,
     }: {
+      date?: string;
+      startTime: string;
+      endTime: string;
+      type: ScheduleEntryType;
+      serviceId?: string;
+      description?: string;
+    } = req.body;
+
+    const req_installer = req.installer?._id;
+
+    if (!startTime || !endTime || !type) {
+      res.status(400);
+      throw new Error('Faltan datos para agendar el horario');
+    }
+
+    const startDateTime = date
+      ? new Date(`${date}T${startTime}`)
+      : new Date(startTime);
+    const endDateTime = date
+      ? new Date(`${date}T${endTime}`)
+      : new Date(endTime);
+
+    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
+      res.status(400);
+      throw new Error('Formato de fecha u hora inválido');
+    }
+    if (startDateTime >= endDateTime) {
+      res.status(400);
+      throw new Error('La hora de inicio debe ser anterior a la hora de fin');
+    }
+
+    let installerId: string | null = null;
+
+    if (type === 'Service') {
+      if (!serviceId) {
+        res.status(400);
+        throw new Error(
+          'Se requiere el id del servicio para un horario de tipo Service',
+        );
+      }
+
+      const service = await Service.findById(serviceId).select('installerId');
+
+      if (!service) {
+        res.status(404);
+        throw new Error('Servicio no encontrado');
+      }
+
+      installerId = service.installerId.toString();
+    } else if (type === 'Block') {
+      if (!req_installer) {
+        res.status(400);
+        throw new Error('Error al obtener id de instalador');
+      }
+      installerId = req_installer.toString();
+    }
+
+    const conflictQuery: any = {
+      startTime: { $lt: endDateTime },
+      endTime: { $gt: startDateTime },
+    };
+
+    if (type === 'Service') {
+      conflictQuery.serviceId = { $ne: serviceId };
+    }
+    if (type === 'Block') {
+      conflictQuery.installerId = { $eq: installerId };
+    }
+
+    const conflict = await Schedule.findOne(conflictQuery).populate({
+      path: 'serviceId',
+      match: installerId ? { installerId } : {},
+    });
+
+    if (conflict) {
+      res.status(400);
+      throw new Error(
+        type === 'Block'
+          ? 'El horario de bloqueo choca con otro horario'
+          : 'El instalador ya tiene un horario en ese rango',
+      );
+    }
+
+    const newSchedule = await Schedule.create({
+      startTime: startDateTime,
+      endTime: endDateTime,
+      type,
+      ...(serviceId && { serviceId }),
+      ...(installerId && { installerId }),
+      ...(description && { description }),
+    });
+
+    res.status(201).json({
+      error: false,
+      message: 'Horario creado correctamente',
+      schedule: newSchedule,
+    });
+  },
+);
+
+/*
+const createSchedule = expressAsyncHandler(
+  async (req: Request, res: Response) => {
+    const {
+      date,
+      startTime,
+      endTime,
+      type,
+      serviceId,
+      description,
+    }: {
       date: string;
       startTime: string;
       endTime: string;
@@ -25,7 +136,7 @@ const createSchedule = expressAsyncHandler(
 
     if (!date || !startTime || !endTime || !serviceId || !type) {
       res.status(400);
-      throw new Error('Faltan datos para crear el calendario');
+      throw new Error('Faltan datos para agendar el horario');
     }
 
     const startDateTime = new Date(`${date}T${startTime}`);
@@ -115,6 +226,7 @@ const createSchedule = expressAsyncHandler(
     });
   },
 );
+*/
 
 const updateSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -295,6 +407,7 @@ const findSchedule = expressAsyncHandler(
       }
       matchCondition = {
         'installer._id': new mongoose.Types.ObjectId(installer._id),
+        'service.status': { $ne: 'Canceled' },
       };
     }
 
@@ -327,9 +440,12 @@ const findSchedule = expressAsyncHandler(
         _id: 1,
         startTime: 1,
         endTime: 1,
+        serviceId: '$service._id',
         folio: '$service.folio',
         address: '$service.address',
         type: 1,
+        status: '$service.status',
+        description: 1,
       };
     }
 

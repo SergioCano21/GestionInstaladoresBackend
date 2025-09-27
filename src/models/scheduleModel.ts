@@ -15,6 +15,10 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Service',
     },
+    installerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Installer',
+    },
     type: {
       type: String,
       enum: ['Service', 'Block'],

@@ -118,7 +118,7 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Error al pasar el status como parametro');
   }
 
-  const statusMap = {
+  let statusMap: any = {
     active: ['To Do', 'Doing'],
     completed: ['Done', 'Canceled'],
   };
@@ -157,6 +157,11 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     };
   }
   if (installer) {
+    statusMap = {
+      ...statusMap,
+      completed: ['Done'],
+    };
+
     projectStage = {
       ...projectStage,
       store: {
