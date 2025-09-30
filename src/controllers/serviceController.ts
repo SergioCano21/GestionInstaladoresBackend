@@ -3,6 +3,7 @@ import expressAsyncHandler from 'express-async-handler';
 import Service from '../models/serviceModel';
 import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
 import mongoose from 'mongoose';
+import Schedule from '../models/scheduleModel';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -370,6 +371,8 @@ const deleteService = expressAsyncHandler(
       res.status(400);
       throw new Error('Error al intentar eliminar el servicio');
     }
+
+    await Schedule.findOneAndDelete({ serviceId: id });
 
     res.status(200).json({
       error: false,
