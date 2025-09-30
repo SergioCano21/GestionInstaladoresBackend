@@ -15,7 +15,7 @@ const routerSchedule: Router = express.Router();
 
 routerSchedule.get('/', protect, findSchedule);
 routerSchedule.post('/', protect, isRoleLocalAndInstaller, createSchedule);
-routerSchedule.put('/:id', protect, isRoleLocal, updateSchedule);
+routerSchedule.put('/:id', protect, isRoleLocalAndInstaller, updateSchedule);
 routerSchedule.delete('/:id', protect, isRoleLocal, deleteSchedule);
 
 export default routerSchedule;

@@ -23,11 +23,41 @@ const createSchedule = expressAsyncHandler(
       description?: string;
     } = req.body;
 
-    const req_installer = req.installer?._id;
+    let installer: mongoose.Types.ObjectId | null = null;
 
-    if (!startTime || !endTime || !type) {
+    if (type === 'Service') {
+      if (!startTime || !endTime || !date || !serviceId) {
+        res.status(400);
+        throw new Error('Faltan datos para agendar el horario');
+      }
+
+      const exist = await Schedule.findOne({ serviceId }).lean();
+
+      if (exist) {
+        res.status(400);
+        throw new Error('El servicio ya tiene un horario asignado');
+      }
+
+      const service = await Service.findById(serviceId)
+        .select('installerId')
+        .lean();
+
+      if (!service) {
+        res.status(404);
+        throw new Error('Servicio no encontrado');
+      }
+
+      installer = service.installerId;
+    } else if (type === 'Block') {
+      if (!startTime || !endTime) {
+        res.status(400);
+        throw new Error('Faltan datos para apartar el horario');
+      }
+
+      installer = req.installer?._id!;
+    } else {
       res.status(400);
-      throw new Error('Faltan datos para agendar el horario');
+      throw new Error('Error en el tipo de horario');
     }
 
     const startDateTime = date
@@ -41,182 +71,45 @@ const createSchedule = expressAsyncHandler(
       res.status(400);
       throw new Error('Formato de fecha u hora inválido');
     }
-    if (startDateTime >= endDateTime) {
-      res.status(400);
-      throw new Error('La hora de inicio debe ser anterior a la hora de fin');
-    }
-
-    let installerId: string | null = null;
-
-    if (type === 'Service') {
-      if (!serviceId) {
-        res.status(400);
-        throw new Error(
-          'Se requiere el id del servicio para un horario de tipo Service',
-        );
-      }
-
-      const service = await Service.findById(serviceId).select('installerId');
-
-      if (!service) {
-        res.status(404);
-        throw new Error('Servicio no encontrado');
-      }
-
-      installerId = service.installerId.toString();
-    } else if (type === 'Block') {
-      if (!req_installer) {
-        res.status(400);
-        throw new Error('Error al obtener id de instalador');
-      }
-      installerId = req_installer.toString();
-    }
-
-    const conflictQuery: any = {
-      startTime: { $lt: endDateTime },
-      endTime: { $gt: startDateTime },
-    };
-
-    if (type === 'Service') {
-      conflictQuery.serviceId = { $ne: serviceId };
-    }
-    if (type === 'Block') {
-      conflictQuery.installerId = { $eq: installerId };
-    }
-
-    const conflict = await Schedule.findOne(conflictQuery).populate({
-      path: 'serviceId',
-      match: installerId ? { installerId } : {},
-    });
-
-    if (conflict) {
-      res.status(400);
-      throw new Error(
-        type === 'Block'
-          ? 'El horario de bloqueo choca con otro horario'
-          : 'El instalador ya tiene un horario en ese rango',
-      );
-    }
-
-    const newSchedule = await Schedule.create({
-      startTime: startDateTime,
-      endTime: endDateTime,
-      type,
-      ...(serviceId && { serviceId }),
-      ...(installerId && { installerId }),
-      ...(description && { description }),
-    });
-
-    res.status(201).json({
-      error: false,
-      message: 'Horario creado correctamente',
-      schedule: newSchedule,
-    });
-  },
-);
-
-/*
-const createSchedule = expressAsyncHandler(
-  async (req: Request, res: Response) => {
-    const {
-      date,
-      startTime,
-      endTime,
-      type,
-      serviceId,
-      description,
-    }: {
-      date: string;
-      startTime: string;
-      endTime: string;
-      type: ScheduleEntryType;
-      serviceId: string;
-      description: string;
-    } = req.body;
-
-    if (!date || !startTime || !endTime || !serviceId || !type) {
-      res.status(400);
-      throw new Error('Faltan datos para agendar el horario');
-    }
-
-    const startDateTime = new Date(`${date}T${startTime}`);
-    const endDateTime = new Date(`${date}T${endTime}`);
-
-    if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
-      res.status(400);
-      throw new Error('Formato de fecha u hora inválido');
-    }
 
     if (startDateTime >= endDateTime) {
       res.status(400);
       throw new Error('La hora de inicio debe ser anterior a la hora de fin');
     }
 
-    const result = await Service.aggregate([
-      // Find specific service by ID
-      { $match: { _id: new mongoose.Types.ObjectId(serviceId) } },
-
-      // Verify if there are conflicts with the schedule
+    const conflict = await Schedule.aggregate([
       {
         $lookup: {
-          from: 'schedules',
-          let: { installerId: '$installerId', serviceId: '$_id' },
-          pipeline: [
-            {
-              $lookup: {
-                from: 'services',
-                localField: 'serviceId',
-                foreignField: '_id',
-                as: 'service',
-              },
-            },
-            { $unwind: '$service' },
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ['$service.installerId', '$$installerId'] },
-                    { $ne: ['$serviceId', '$$serviceId'] },
-                  ],
-                },
-                startTime: { $lt: endDateTime },
-                endTime: { $gt: startDateTime },
-              },
-            },
-            { $limit: 1 }, // Only need one to check if there are conflicts
-            { $project: { _id: 1 } },
-          ],
-          as: 'conflicts',
+          from: 'services',
+          localField: 'serviceId',
+          foreignField: '_id',
+          as: 'service',
         },
       },
-
-      // Project only necessary fields
       {
-        $project: {
-          installerId: 1,
-          hasConflicts: { $gt: [{ $size: '$conflicts' }, 0] },
+        $match: {
+          $or: [
+            { installerId: installer },
+            { 'service.installerId': installer },
+          ],
+          startTime: { $lt: endDateTime },
+          endTime: { $gt: startDateTime },
         },
       },
     ]);
 
-    if (!result.length) {
+    if (conflict.length > 0) {
       res.status(400);
-      throw new Error('No se encontró el servicio');
-    }
-
-    if (result[0].hasConflicts) {
-      res.status(400);
-      throw new Error(
-        'El horario del instalador choca con otro horario establecido',
-      );
+      throw new Error('El horario choca con otro horario establecido');
     }
 
     const newSchedule = await Schedule.create({
       startTime: startDateTime,
       endTime: endDateTime,
       type,
-      serviceId,
-      ...(description && { description }),
+      ...(type === 'Service' && { serviceId }),
+      ...(type === 'Block' && { installerId: installer }),
+      ...(type === 'Block' && description && { description }),
     });
 
     res.status(201).json({
@@ -226,7 +119,6 @@ const createSchedule = expressAsyncHandler(
     });
   },
 );
-*/
 
 const updateSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -245,37 +137,38 @@ const updateSchedule = expressAsyncHandler(
       serviceId: string;
       description: string;
     } = req.body;
+
     const { id } = req.params;
 
-    const schedule = await Schedule.findById(id);
+    const schedule = await Schedule.findById(id).populate({
+      path: 'serviceId',
+      select: 'installerId',
+    });
 
     if (!schedule) {
       res.status(400);
       throw new Error('No se encontró el horario');
     }
 
-    let serviceForConflictCheck = schedule.serviceId;
+    let installer: mongoose.Types.ObjectId;
 
-    if (serviceId && serviceId !== schedule.serviceId.toString()) {
-      const serviceExist = await Service.findOne({
-        _id: serviceId,
-        deleted: false,
-      });
-
-      if (!serviceExist) {
-        res.status(400);
-        throw new Error('No se encontró el servicio');
-      }
-      schedule.serviceId = new mongoose.Types.ObjectId(serviceId);
-      serviceForConflictCheck = new mongoose.Types.ObjectId(serviceId);
+    if (type === 'Service') installer = (schedule.serviceId as any).installerId;
+    else if (type === 'Block') installer = schedule.installerId;
+    else {
+      res.status(400);
+      throw new Error('Error en el tipo de horario');
     }
 
-    const startDateTime = new Date(`${date}T${startTime}`);
-    const endDateTime = new Date(`${date}T${endTime}`);
+    const startDateTime = date
+      ? new Date(`${date}T${startTime}`)
+      : new Date(startTime);
+    const endDateTime = date
+      ? new Date(`${date}T${endTime}`)
+      : new Date(endTime);
 
     if (
-      (startTime && startDateTime !== schedule.startTime) ||
-      (endTime && endDateTime !== schedule.endTime)
+      startDateTime !== schedule.startTime ||
+      endDateTime !== schedule.endTime
     ) {
       if (isNaN(startDateTime.getTime()) || isNaN(endDateTime.getTime())) {
         res.status(400);
@@ -286,50 +179,53 @@ const updateSchedule = expressAsyncHandler(
         res.status(400);
         throw new Error('La hora de inicio debe ser anterior a la hora de fin');
       }
+
       schedule.startTime = startDateTime;
       schedule.endTime = endDateTime;
+    }
 
-      const currentService = await Service.findById(serviceForConflictCheck)
-        .select('installerId')
+    if (serviceId && serviceId !== schedule.serviceId.toString()) {
+      const serviceExist = await Service.findById(serviceId)
+        .select('_id')
         .lean();
-      if (!currentService) {
+
+      if (!serviceExist) {
         res.status(400);
         throw new Error('No se encontró el servicio');
       }
 
-      const hasConflict = await Schedule.aggregate([
-        {
-          $lookup: {
-            from: 'services',
-            localField: 'serviceId',
-            foreignField: '_id',
-            as: 'service',
-          },
-        },
-        { $unwind: '$service' },
-        {
-          $match: {
-            'service.installerId': currentService.installerId,
-            startTime: { $lt: new Date(schedule.endTime) },
-            endTime: { $gt: new Date(schedule.startTime) },
-            _id: { $ne: new mongoose.Types.ObjectId(id) },
-          },
-        },
-        { $limit: 1 },
-        { $project: { _id: 1 } },
-      ]);
-
-      if (hasConflict.length > 0) {
-        res.status(400);
-        throw new Error(
-          'El horario del instalador choca con otro horario establecido',
-        );
-      }
+      schedule.serviceId = serviceExist._id;
     }
 
-    if (type && type !== schedule.type) schedule.type = type;
     if (description && description !== schedule.description)
       schedule.description = description;
+
+    const conflict = await Schedule.aggregate([
+      {
+        $lookup: {
+          from: 'services',
+          localField: 'serviceId',
+          foreignField: '_id',
+          as: 'service',
+        },
+      },
+      {
+        $match: {
+          $or: [
+            { installerId: installer },
+            { 'service.installerId': installer },
+          ],
+          startTime: { $lt: schedule.endTime },
+          endTime: { $gt: schedule.startTime },
+          _id: { $ne: schedule._id },
+        },
+      },
+    ]);
+
+    if (conflict.length > 0) {
+      res.status(400);
+      throw new Error('El horario choca con otro horario establecido');
+    }
 
     await schedule.save();
 
@@ -375,7 +271,13 @@ const findSchedule = expressAsyncHandler(
             );
           }
           matchCondition = {
-            'store._id': new mongoose.Types.ObjectId(admin.storeId),
+            $or: [
+              { 'store._id': admin.storeId },
+              {
+                type: 'Block',
+                'installer.storeId': admin.storeId,
+              },
+            ],
           };
           break;
         case 'district':
@@ -406,8 +308,8 @@ const findSchedule = expressAsyncHandler(
         throw new Error('Falta el id del instalador');
       }
       matchCondition = {
-        'installer._id': new mongoose.Types.ObjectId(installer._id),
         'service.status': { $ne: 'Canceled' },
+        'installer._id': installer._id,
       };
     }
 
@@ -433,6 +335,7 @@ const findSchedule = expressAsyncHandler(
           name: '$store.name',
           numStore: '$store.numStore',
         },
+        description: 1,
       };
     }
     if (installer) {
@@ -459,7 +362,10 @@ const findSchedule = expressAsyncHandler(
         },
       },
       {
-        $unwind: '$service',
+        $unwind: {
+          path: '$service',
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $lookup: {
@@ -470,18 +376,37 @@ const findSchedule = expressAsyncHandler(
         },
       },
       {
-        $unwind: '$store',
+        $unwind: {
+          path: '$store',
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $lookup: {
           from: 'installers',
           localField: 'service.installerId',
           foreignField: '_id',
-          as: 'installer',
+          as: 'installerFromService',
         },
       },
       {
-        $unwind: '$installer',
+        $lookup: {
+          from: 'installers',
+          localField: 'installerId',
+          foreignField: '_id',
+          as: 'installerFromBlock',
+        },
+      },
+      {
+        $addFields: {
+          installer: {
+            $cond: {
+              if: { $gt: [{ $size: '$installerFromService' }, 0] },
+              then: { $arrayElemAt: ['$installerFromService', 0] },
+              else: { $arrayElemAt: ['$installerFromBlock', 0] },
+            },
+          },
+        },
       },
       {
         $match: matchCondition,
