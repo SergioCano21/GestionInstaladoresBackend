@@ -200,6 +200,18 @@ const updateSchedule = expressAsyncHandler(
     if (description && description !== schedule.description)
       schedule.description = description;
 
+    if (type === 'Service') {
+      const duplicateSchedule = await Schedule.findOne({
+        serviceId: schedule.serviceId,
+        _id: { $ne: schedule._id },
+      });
+
+      if (duplicateSchedule) {
+        res.status(400);
+        throw new Error('Ya existe un horario para este servicio');
+      }
+    }
+
     const conflict = await Schedule.aggregate([
       {
         $lookup: {
