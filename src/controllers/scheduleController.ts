@@ -197,7 +197,7 @@ const updateSchedule = expressAsyncHandler(
       schedule.serviceId = serviceExist._id;
     }
 
-    if (description && description !== schedule.description)
+    if (description !== undefined && description !== schedule.description)
       schedule.description = description;
 
     if (type === 'Service') {
