@@ -1,0 +1,187 @@
+@font-face {
+  font-family: 'OpenSans';
+  src: url('../assets/OpenSans.ttf') format('truetype');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+body {
+  --color-primary: #f96302;
+  --color-black: #333;
+  --color-gray: #8e9398;
+
+  --underline-height: 1.2em;
+
+  background: '#fff';
+  padding: 40px;
+  font-family: 'OpenSans', system-ui, sans-serif;
+}
+header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+section {
+  margin-bottom: 20px;
+}
+.logo-text {
+  font-size: 35px;
+  font-weight: 800;
+  margin-left: 10px;
+  color: var(--color-primary);
+}
+.title {
+  font-weight: 900;
+  font-size: 45px;
+  color: var(--color-black);
+  line-height: 1;
+}
+.subtitle {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--color-black);
+  padding: 2px 2px 2px 10px;
+  margin-bottom: 10px;
+}
+.primary-background {
+  background-color: var(--color-primary);
+}
+.gray-background {
+  background-color: var(--color-gray);
+}
+.black-background {
+  background-color: var(--color-black);
+}
+.section {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+}
+.line-data {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.label {
+  font-size: 16px;
+  color: var(--color-black);
+}
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+.underline {
+  border-bottom: 1px solid var(--color-gray);
+  height: var(--underline-height);
+  font-size: 16px;
+  color: var(--color-black);
+}
+.top-width {
+  min-width: 235px;
+}
+.client-data-1-width {
+  min-width: 850px;
+}
+.client-data-2-width {
+  min-width: 400px;
+}
+.client-data-3-width {
+  min-width: 1343px;
+}
+.installer-data-1-width {
+  min-width: 720px;
+}
+.installer-data-2-width {
+  min-width: 400px;
+}
+.installer-data-3-width {
+  min-width: 1149px;
+}
+.installer-data-4-width {
+  min-width: 500px;
+}
+.multi-underline {
+  display: block;
+  width: 100%;
+  line-height: var(--underline-height);
+  font-size: 16px;
+  color: var(--color-black);
+  padding: 0;
+  margin: 0;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  position: relative;
+}
+.multi-underline-5 {
+  height: calc(var(--underline-height) * 5);
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(var(--underline-height) - 1px),
+    var(--color-gray) calc(var(--underline-height) - 1px),
+    var(--color-gray) var(--underline-height)
+  );
+  background-size: 100% calc(var(--underline-height) * 5);
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.multi-underline-4 {
+  height: calc(var(--underline-height) * 4);
+  background-image: repeating-linear-gradient(
+    transparent,
+    transparent calc(var(--underline-height) - 1px),
+    var(--color-gray) calc(var(--underline-height) - 1px),
+    var(--color-gray) var(--underline-height)
+  );
+  background-size: 100% calc(var(--underline-height) * 4);
+  background-repeat: no-repeat;
+  overflow: hidden;
+}
+.disclaimer {
+  font-size: 14px;
+  font-style: italic;
+  color: var(--color-black);
+}
+.conformity {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-black);
+  text-align: center;
+}
+.signature-line {
+  border-bottom: 1px solid var(--color-black);
+  height: var(--underline-height);
+  width: 350px;
+}
+.signature-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 100px;
+}
+.signature-text {
+  margin-top: 10px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--color-black);
+}
+.absent-client-1-width {
+  min-width: 610px;
+}
+.absent-client-2-width {
+  min-width: 625px;
+}
+.flex {
+  flex: 1;
+}
+.product-installed-label {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  display: block;
+}
