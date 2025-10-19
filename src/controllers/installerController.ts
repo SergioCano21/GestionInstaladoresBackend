@@ -32,7 +32,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
   const newToken = jwt.sign(
     { isAdmin: false, id: installer._id },
     process.env.JWT_SECRET!,
-    { expiresIn: '1h' },
+    { expiresIn: '7d' },
   );
   res.status(200).json({
     message: 'Login realizado con éxito',

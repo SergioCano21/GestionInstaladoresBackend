@@ -32,7 +32,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
   const newToken = jwt.sign(
     { isAdmin: true, id: admin._id },
     process.env.JWT_SECRET!,
-    { expiresIn: '1h' },
+    { expiresIn: '7d' },
   );
   res
     .status(200)
@@ -40,7 +40,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
       httpOnly: false,
       sameSite: 'none',
       secure: true,
-      maxAge: 1000 * 60 * 60,
+      maxAge: 1000 * 60 * 60 * 24 * 7,
     })
     .json({
       message: 'Login realizado con éxito',
