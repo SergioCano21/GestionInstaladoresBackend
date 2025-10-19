@@ -4,7 +4,7 @@ import { isInstaller, protect } from '../middlewares/authenticationMiddleware';
 
 const routerReceipt: Router = express.Router();
 
-routerReceipt.get('/', protect, findReceipt);
+routerReceipt.get('/:serviceId', protect, findReceipt);
 routerReceipt.post('/', protect, isInstaller, createReceipt);
 
 export default routerReceipt;

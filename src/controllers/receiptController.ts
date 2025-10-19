@@ -3,8 +3,11 @@ import expressAsyncHandler from 'express-async-handler';
 import { IInstalledProduct } from '../types/models';
 import Receipt from '../models/recepitModel';
 import Service from '../models/serviceModel';
-import mongoose from 'mongoose';
-import Store from '../models/storeModel';
+import { generatePDF } from '../services/pdfService';
+import path from 'path';
+import fs from 'fs/promises';
+import { deletePdf, uploadPdf } from '../services/pdfUpload';
+import sendEmail from '../services/emailService';
 
 const createReceipt = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -21,9 +24,10 @@ const createReceipt = expressAsyncHandler(
       relationshipWithClient,
       secondaryClientName,
       serviceId,
+      clientEmail,
     }: {
-      startTime: Date;
-      endTime: Date;
+      startTime: string;
+      endTime: string;
       installerName: string;
       installedProduct: IInstalledProduct[];
       recommendations: string;
@@ -34,6 +38,7 @@ const createReceipt = expressAsyncHandler(
       relationshipWithClient: string;
       secondaryClientName: string;
       serviceId: string;
+      clientEmail: string;
     } = req.body;
 
     if (
@@ -64,154 +69,134 @@ const createReceipt = expressAsyncHandler(
       throw new Error('Se deben enviar mínimo 3 imagenes de evidencia');
     }
 
-    const serviceExists = await Service.findById(serviceId);
+    const service = await Service.findById(serviceId).populate([
+      { path: 'storeId', select: 'name numStore phone -_id' },
+      { path: 'installerId', select: 'installerId name -_id' },
+    ]);
 
-    if (!serviceExists) {
+    if (!service) {
       res.status(400);
       throw new Error('No se encontró el servicio');
     }
 
-    const receipt = await Receipt.create({
-      startTime,
-      endTime,
-      installerName,
-      installedProduct,
-      recommendations,
-      clientComments,
-      images,
-      clientSignature,
-      isClientAbsent,
-      ...(isClientAbsent && { relationshipWithClient }),
-      ...(isClientAbsent && { secondaryClientName }),
-      serviceId,
-    });
+    const receiptExist = await Receipt.findOne({ serviceId: service._id });
+    if (receiptExist) {
+      res.status(400);
+      throw new Error('Ya hay un recibo creado para este servicio.');
+    }
 
-    serviceExists.status = 'Done';
-    serviceExists.save();
+    let pdfPath: string | null = null;
+    let uploadResult: { url: string; publicId: string } | null = null;
+    let receipt: any = null;
 
-    res.status(200).json({
-      error: false,
-      message: 'Recibo de Conformidad creado',
-      receipt,
-    });
+    try {
+      // Generation of the pdf receipt file
+      const logoPath = `${path.join(__dirname, '..', 'templates', 'assets', 'logo.svg')}`;
+      const logoSvg = await fs.readFile(logoPath, 'utf-8');
+      const logoBase64 = `data:image/svg+xml;base64,${Buffer.from(logoSvg).toString('base64')}`;
+
+      const css = await fs.readFile(
+        path.join(__dirname, '..', 'templates', 'styles', 'styles.css'),
+        'utf-8',
+      );
+
+      const receiptData = {
+        title: `Folio - ${service.folio}`,
+        styles: `<style>${css}</style>`,
+        logoPath: logoBase64,
+        serviceId: service._id,
+        folio: service.folio,
+        endTime: endTime.split('T')[0],
+        nameStore: (service.storeId as any).name,
+        numStore: (service.storeId as any).numStore,
+        phoneStore: (service.storeId as any).phone,
+        clientName: service.client,
+        clientPhone: service.clientPhone,
+        clientAddress: service.address,
+        installerTitular: (service.installerId as any).name,
+        installerId: (service.installerId as any).installerId,
+        installerName: installerName,
+        startTime: startTime.split('T')[0],
+        installedProduct: installedProduct[0].installedProduct,
+        installedIn: installedProduct[0].installedIn,
+        quantity: installedProduct[0].quantity,
+        specification: installedProduct[0].specification,
+        serialNumber: installedProduct[0].serialNumber,
+        recommendations: recommendations,
+        clientComments: clientComments,
+        images: images,
+        ...(!isClientAbsent && { signature: clientSignature }),
+        ...(isClientAbsent && { secondaryClientName: secondaryClientName }),
+        ...(isClientAbsent && {
+          relationshipWithClient: relationshipWithClient,
+        }),
+        ...(isClientAbsent && { secondarySignature: clientSignature }),
+      };
+
+      pdfPath = await generatePDF(
+        path.join(__dirname, '..', 'templates', 'receipt.hbs'),
+        receiptData,
+      );
+
+      // Guardar PDF
+      uploadResult = await uploadPdf(pdfPath);
+
+      // Agregar url del PDF con serviceId a la base de datos
+      receipt = await Receipt.create({
+        serviceId: service._id,
+        receiptUrl: uploadResult.url,
+        publicId: uploadResult.publicId,
+      });
+
+      service.status = 'Done';
+      service.save();
+
+      // Enviar correo al cliente con PDF
+      await sendEmail(
+        clientEmail,
+        'Recibo de Servicio de Instalación',
+        pdfPath,
+        'recibo.pdf',
+        isClientAbsent ? secondaryClientName : service.client,
+      );
+
+      res.status(200).json({
+        error: false,
+        message: 'Recibo de Conformidad creado',
+        receipt,
+      });
+    } catch (error: any) {
+      if (receipt)
+        await Receipt.findByIdAndDelete(receipt._id).catch((err) =>
+          console.log('Failed to delete receipt document from db: ', err),
+        );
+
+      if (uploadResult) await deletePdf(uploadResult.publicId);
+
+      throw error;
+    } finally {
+      if (pdfPath)
+        await fs.unlink(pdfPath).catch(() => {
+          console.log('Error trying to delete pdf file from:', pdfPath);
+        });
+    }
   },
 );
 
 const findReceipt = expressAsyncHandler(async (req: Request, res: Response) => {
-  const admin = req.admin;
-  const installer = req.installer;
+  const { serviceId } = req.params;
 
-  if (admin) {
-    if (admin.role == 'local') {
-      const receipt = await Receipt.aggregate([
-        {
-          $lookup: {
-            from: 'services',
-            localField: 'serviceId',
-            foreignField: '_id',
-            as: 'service',
-          },
-        },
-        { $unwind: '$service' },
-        {
-          $match: {
-            'service.storeId': new mongoose.Types.ObjectId(admin.storeId),
-          },
-        },
-      ]);
-      res.status(200).json({
-        error: false,
-        message: 'Recibos de Conformidad encontrados',
-        receipt,
-      });
-    } else if (admin.role == 'district') {
-      const stores = await Store.find({ district: admin.district }).select(
-        '_id',
-      );
-
-      const storesIds = stores.map(
-        (store) => new mongoose.Types.ObjectId(store._id),
-      );
-
-      const receipt = await Receipt.aggregate([
-        {
-          $lookup: {
-            from: 'services',
-            localField: 'serviceId',
-            foreignField: '_id',
-            as: 'service',
-          },
-        },
-        { $unwind: '$service' },
-        {
-          $match: {
-            'service.storeId': { $in: storesIds },
-          },
-        },
-      ]);
-      res.status(200).json({
-        error: false,
-        message: 'Recibos de Conformidad encontrados',
-        receipt,
-      });
-    } else {
-      const stores = await Store.find({ country: admin.country }).select('_id');
-
-      const storesIds = stores.map(
-        (store) => new mongoose.Types.ObjectId(store._id),
-      );
-
-      const receipt = await Receipt.aggregate([
-        {
-          $lookup: {
-            from: 'services',
-            localField: 'serviceId',
-            foreignField: '_id',
-            as: 'service',
-          },
-        },
-        { $unwind: '$service' },
-        {
-          $match: {
-            'service.storeId': { $in: storesIds },
-          },
-        },
-      ]);
-      res.status(200).json({
-        error: false,
-        message: 'Recibos de Conformidad encontrados',
-        receipt,
-      });
-    }
-  } else {
-    if (!installer?.installerId) {
-      res.status(400);
-      throw new Error('Falta el id del instalador');
-    }
-
-    const receipt = await Receipt.aggregate([
-      {
-        $lookup: {
-          from: 'services',
-          localField: 'serviceId',
-          foreignField: '_id',
-          as: 'service',
-        },
-      },
-      { $unwind: '$service' },
-      {
-        $match: {
-          'service.installerId': installer.installerId,
-        },
-      },
-    ]);
-
-    res.status(200).json({
-      error: false,
-      message: 'Recibos de Conformidad encontrados',
-      receipt,
-    });
+  const receipt = await Receipt.findOne({ serviceId }).lean();
+  if (!receipt) {
+    res.status(400);
+    throw new Error('No se encontró el recibo');
   }
+
+  res.status(200).json({
+    error: false,
+    message: 'Recibo encontrado',
+    receiptUrl: receipt.receiptUrl,
+  });
 });
 
 export { createReceipt, findReceipt };

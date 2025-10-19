@@ -82,18 +82,9 @@ export interface ISchedule {
 
 export interface IReceipt {
   _id: Types.ObjectId;
-  startTime: Date;
-  endTime: Date;
-  installerName: string;
-  installedProduct: IInstalledProduct[];
-  recommendations?: string;
-  clientComments?: string;
-  images: string[];
-  clientSignature: string;
-  isClientAbsent: boolean;
-  relationshipWithClient?: string;
-  secondaryClientName?: string;
   serviceId: Types.ObjectId;
+  receiptUrl: string;
+  publicId: string;
 }
 
 export interface IInstalledProduct {

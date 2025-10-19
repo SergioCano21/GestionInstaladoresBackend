@@ -3,50 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>{{{title}}}</title>
     <link rel="stylesheet" href="./styles/styles.css" />
+    {{{styles}}}
   </head>
   <body>
     <!-- Header -->
     <header>
-      <img src="./assets/logo.svg" height="60" alt="Logo" /><span
-        class="logo-text"
-        >Área de Servicios Especiales</span
-      >
+      <img src="{{logoPath}}" height="35" alt="Logo" />
+      <span class="logo-text">Área de Servicios Especiales</span>
     </header>
 
     <!-- Recibo de Conformidad -->
     <section class="section">
       <div class="title">RECIBO DE CONFORMIDAD</div>
-      <div class="col">
+      <div class="col flex-1">
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-3">
             <span class="label">Solicitud de Inst. #:</span>
-            <span class="underline top-width"></span>
+            <span class="underline">{{folio}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-2">
             <span class="label">Fecha:</span>
-            <span class="underline top-width"></span>
+            <span class="underline">{{endTime}}</span>
           </div>
         </div>
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-3">
             <span class="label">Nombre de Tienda:</span>
-            <span class="underline top-width"></span>
+            <span class="underline">{{nameStore}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-2">
             <span class="label"># Tienda:</span>
-            <span class="underline top-width"></span>
+            <span class="underline">{{numStore}}</span>
           </div>
         </div>
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-3">
             <span class="label">Teléfono de Tienda:</span>
-            <span class="underline top-width"></span>
+            <span class="underline">{{phoneStore}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-2">
             <span class="label"># Remisión:</span>
-            <span class="underline top-width"></span>
+            <span class="underline"></span>
           </div>
         </div>
       </div>
@@ -57,19 +56,19 @@
       <div class="subtitle primary-background">DATOS DEL CLIENTE</div>
       <div class="col">
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-2">
             <span class="label">Nombre:</span>
-            <span class="underline client-data-1-width"></span>
+            <span class="underline">{{clientName}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">Teléfono: </span>
-            <span class="underline client-data-2-width"></span>
+            <span class="underline">{{clientPhone}}</span>
           </div>
         </div>
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">Domicilio:</span>
-            <span class="underline client-data-3-width"></span>
+            <span class="underline">{{clientAddress}}</span>
           </div>
         </div>
       </div>
@@ -80,29 +79,29 @@
       <div class="subtitle primary-background">DATOS DEL INSTALADOR</div>
       <div class="col">
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-2">
             <span class="label">Nombre del Titular:</span>
-            <span class="underline installer-data-1-width"></span>
+            <span class="underline">{{installerTitular}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">ID de Instalador: </span>
-            <span class="underline installer-data-2-width"></span>
+            <span class="underline">{{installerId}}</span>
           </div>
         </div>
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">Nombre de quien realizó el servicio:</span>
-            <span class="underline installer-data-3-width"></span>
+            <span class="underline">{{installerName}}</span>
           </div>
         </div>
         <div class="row">
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">Fecha de inicio del servicio:</span>
-            <span class="underline installer-data-4-width"></span>
+            <span class="underline">{{startTime}}</span>
           </div>
-          <div class="line-data">
+          <div class="line-data flex-1">
             <span class="label">Fecha final del servicio:</span>
-            <span class="underline installer-data-4-width"></span>
+            <span class="underline">{{endTime}}</span>
           </div>
         </div>
       </div>
@@ -112,27 +111,28 @@
     <section>
       <div class="subtitle primary-background">PRODUCTO INSTALADO</div>
       <div class="row">
-        <div class="flex">
+        <div class="flex-1">
           <label class="product-installed-label">Producto Instalado</label>
-          <div class="multi-underline multi-underline-5"></div>
+          <!-- prettier-ignore -->
+          <div class="multi-underline multi-underline-5">{{installedProduct}}</div>
         </div>
-        <div class="flex">
+        <div class="flex-1">
           <label class="product-installed-label">Dónde se instaló</label>
-          <div class="multi-underline multi-underline-5"></div>
+          <div class="multi-underline multi-underline-5">{{installedIn}}</div>
         </div>
-        <div class="flex">
+        <div class="flex-1">
           <label class="product-installed-label">Cantidad</label>
-          <div class="multi-underline multi-underline-5"></div>
+          <div class="multi-underline multi-underline-5">{{quantity}}</div>
         </div>
-        <div class="flex">
+        <div class="flex-1">
           <label class="product-installed-label"
             >Especificación del Producto</label
           >
-          <div class="multi-underline multi-underline-5"></div>
+          <div class="multi-underline multi-underline-5">{{specification}}</div>
         </div>
-        <div class="flex">
+        <div class="flex-1">
           <label class="product-installed-label"># de Serie</label>
-          <div class="multi-underline multi-underline-5"></div>
+          <div class="multi-underline multi-underline-5">{{serialNumber}}</div>
         </div>
       </div>
     </section>
@@ -143,7 +143,7 @@
         RECOMENDACIONES DE USO, DE LIMPIEZA, DE MANTENIMIENTO Y DE GARANTÍA
         (LLENADO POR EL INSTALADOR)
       </div>
-      <div class="multi-underline multi-underline-5"></div>
+      <div class="multi-underline multi-underline-5">{{recommendations}}</div>
     </section>
 
     <!-- Experiencia del Servicio -->
@@ -151,7 +151,7 @@
       <div class="subtitle primary-background">
         EXPERIENCIA CON EL SERVICIO (LLENADO POR EL CLIENTE)
       </div>
-      <div class="multi-underline multi-underline-4"></div>
+      <div class="multi-underline multi-underline-4">{{clientComments}}</div>
     </section>
 
     <!-- Disclaimer -->
@@ -180,33 +180,69 @@
 
     <!-- Signature -->
     <section class="signature-section">
+      {{#if signature}}
+      <img
+        src="{{signature}}"
+        alt="Firma del cliente"
+        style="
+          width: 100px;
+          height: auto;
+          display: block;
+          margin: 0 auto 5px auto;
+        "
+      />
+      {{else}}
+      <div  style="height: 60px;"></div>
+      {{/if}}
+      
       <div class="signature-line"></div>
       <div class="signature-text">FIRMA DEL CLIENTE</div>
     </section>
 
     <!-- In case of absence -->
-    <section style="margin-top: 50px">
+    <section style="margin-top: 30px">
       <div class="subtitle gray-background">EN CASO DE AUSENCIA</div>
+      
       <div class="row">
-        <div class="line-data">
+        <div class="line-data flex-1">
           <span class="label">Nombre:</span>
-          <span class="underline absent-client-1-width"></span>
+          <span class="underline">{{secondaryClientName}}</span>
         </div>
-        <div class="line-data">
+        <div class="line-data flex-1">
           <span class="label">Parentesco:</span>
-          <span class="underline absent-client-1-width"></span>
+          <span class="underline">{{relationshipWithClient}}</span>
         </div>
       </div>
-      <div class="row" style="margin-top: 80px">
-        <div class="line-data">
+
+      <div class="row"{{#if secondarySignature}}style="margin-top: -20px;"{{/if}} {{#unless secondarySignature}}style="margin-top: 60px;"{{/unless}}>
+        <div class="line-data" style="align-items: end;">
           <span class="label">Firma:</span>
-          <span class="underline absent-client-2-width"></span>
+          <div class="signature-section">
+            {{#if secondarySignature}}
+              <img
+                src="{{secondarySignature}}"
+                alt="Firma del cliente secundario"
+                style="
+                  width: 100px;
+                  height: auto;
+                  display: block;
+                  margin: 0 auto 5px auto;
+                "
+              />
+            {{/if}}
+            <span class="absent-signature-line" {{#if secondarySignature}}style="margin-top: -50px;"{{/if}}></span>
+          </div>
         </div>
       </div>
     </section>
 
-    <section style="margin-top: 60px">
-      <div class="subtitle black-background">&nbsp;</div>
-    </section>
+    <div class="subtitle black-background">&nbsp;</div>
+
+     <!-- Images -->
+     {{#each images}}
+     <div class="image-page">
+      <img src="{{this}}" alt="Evidencia {{@index}}">
+     </div>
+     {{/each}}
   </body>
 </html>
