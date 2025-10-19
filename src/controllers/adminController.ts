@@ -37,7 +37,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
   res
     .status(200)
     .cookie('access_token', newToken, {
-      httpOnly: false,
+      httpOnly: true,
       sameSite: 'none',
       secure: true,
       maxAge: 1000 * 60 * 60 * 24 * 7,
