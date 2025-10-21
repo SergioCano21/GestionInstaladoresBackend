@@ -13,7 +13,7 @@ const sendEmail = async (
     subject: subject,
     attachments: [
       {
-        fileName: fileName,
+        filename: fileName,
         path: pdfPath,
       },
     ],
