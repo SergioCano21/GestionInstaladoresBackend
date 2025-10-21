@@ -3,7 +3,7 @@ import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 
-const tmpDir = path.join(__dirname, '..', 'tmp');
+const tmpDir = path.join(__dirname, '..', 'temp');
 if (!fs.existsSync(tmpDir)) {
   fs.mkdirSync(tmpDir, { recursive: true });
 }
