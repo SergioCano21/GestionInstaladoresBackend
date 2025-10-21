@@ -13,12 +13,7 @@ export const generatePDF = async (templatePath: string, data: any) => {
   const page = await browser.newPage();
   await page.setContent(html, { waitUntil: 'networkidle0' });
 
-  const outputPath = path.join(
-    __dirname,
-    '..',
-    'pdfs',
-    `${data.serviceId}.pdf`,
-  );
+  const outputPath = path.join('/tmp', `${data.serviceId}.pdf`);
 
   await page.pdf({ path: outputPath, format: 'A4', printBackground: true });
 

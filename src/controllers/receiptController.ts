@@ -166,7 +166,7 @@ const createReceipt = expressAsyncHandler(
         clientEmail,
         'Recibo de Servicio de Instalación',
         pdfPath,
-        'recibo.pdf',
+        `${service._id}.pdf`,
         isClientAbsent ? secondaryClientName! : service.client,
       );
 
