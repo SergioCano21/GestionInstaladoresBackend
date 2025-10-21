@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import expressAsyncHandler from 'express-async-handler';
-import { IInstalledProduct } from '../types/models';
 import Receipt from '../models/recepitModel';
 import Service from '../models/serviceModel';
 import { generatePDF } from '../services/pdfService';
@@ -8,9 +7,12 @@ import path from 'path';
 import fs from 'fs/promises';
 import { deletePdf, uploadPdf } from '../services/pdfUpload';
 import sendEmail from '../services/emailService';
+import { ReceiptData } from '../types/models';
 
 const createReceipt = expressAsyncHandler(
   async (req: Request, res: Response) => {
+    const data: ReceiptData = JSON.parse(req.body.data);
+
     const {
       startTime,
       endTime,
@@ -18,28 +20,32 @@ const createReceipt = expressAsyncHandler(
       installedProduct,
       recommendations,
       clientComments,
-      images,
       clientSignature,
       isClientAbsent,
       relationshipWithClient,
       secondaryClientName,
       serviceId,
       clientEmail,
-    }: {
-      startTime: string;
-      endTime: string;
-      installerName: string;
-      installedProduct: IInstalledProduct[];
-      recommendations: string;
-      clientComments: string;
-      images: string[];
-      clientSignature: string;
-      isClientAbsent: boolean;
-      relationshipWithClient: string;
-      secondaryClientName: string;
-      serviceId: string;
-      clientEmail: string;
-    } = req.body;
+    } = data;
+
+    const files = req.files as Express.Multer.File[];
+    const images = await Promise.all(
+      files.map(async (file) => {
+        const fileData = await fs.readFile(file.path);
+        const base64 = `data:${file.mimetype};base64,${fileData.toString('base64')}`;
+
+        await fs.unlink(file.path).catch((err) => {
+          if (err)
+            console.error(
+              'Error al eliminar archivo temporal:',
+              file.path,
+              err,
+            );
+        });
+
+        return base64;
+      }),
+    );
 
     if (
       !startTime ||
@@ -67,6 +73,10 @@ const createReceipt = expressAsyncHandler(
     if (images.length < 3) {
       res.status(400);
       throw new Error('Se deben enviar mínimo 3 imagenes de evidencia');
+    }
+    if (images.length > 6) {
+      res.status(400);
+      throw new Error('Se deben enviar máximo de 6 imagenes de evidencia');
     }
 
     const service = await Service.findById(serviceId).populate([
@@ -157,7 +167,7 @@ const createReceipt = expressAsyncHandler(
         'Recibo de Servicio de Instalación',
         pdfPath,
         'recibo.pdf',
-        isClientAbsent ? secondaryClientName : service.client,
+        isClientAbsent ? secondaryClientName! : service.client,
       );
 
       res.status(200).json({

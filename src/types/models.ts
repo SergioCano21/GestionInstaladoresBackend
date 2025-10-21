@@ -108,3 +108,18 @@ export interface AdminRequest extends Request {
 export interface InstallerRequest extends Request {
   installer: IInstaller;
 }
+
+export interface ReceiptData {
+  startTime: string;
+  endTime: string;
+  installerName: string;
+  installedProduct: IInstalledProduct[];
+  recommendations: string;
+  clientComments: string;
+  clientSignature: string;
+  isClientAbsent: boolean;
+  relationshipWithClient?: string;
+  secondaryClientName?: string;
+  serviceId: string;
+  clientEmail: string;
+}
