@@ -12,6 +12,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "@sparticuz/chromium": "^141.0.0",
     "bcryptjs": "^3.0.2",
     "cloudinary": "^2.7.0",
     "cookie-parser": "^1.4.7",
@@ -24,7 +25,7 @@
     "mongoose": "^8.15.0",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.9",
-    "puppeteer": "^24.25.0"
+    "puppeteer-core": "^24.26.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.27.0",
@@ -43,6 +44,7 @@
     "globals": "^16.1.0",
     "nodemon": "^3.1.10",
     "prettier": "^3.5.3",
+    "puppeteer": "^24.26.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.32.1"
