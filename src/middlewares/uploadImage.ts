@@ -37,9 +37,11 @@ export const uploadImage = (
         return;
       }
 
+      console.log(err.message);
+
       res.status(400).json({
         error: true,
-        message: 'Error al subir las imágenes. Intenta de nuevo.',
+        message: `Error al subir las imágenes. Intenta de nuevo. ${err.message}`,
       });
       return;
     }
