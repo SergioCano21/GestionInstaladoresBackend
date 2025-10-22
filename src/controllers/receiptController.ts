@@ -28,6 +28,8 @@ const createReceipt = expressAsyncHandler(
       clientEmail,
     } = data;
 
+    console.log(data);
+
     const files = req.files as Express.Multer.File[];
     const images = await Promise.all(
       files.map(async (file) => {
@@ -70,13 +72,9 @@ const createReceipt = expressAsyncHandler(
       throw new Error('Faltan datos de quien firma en caso de ausencia');
     }
 
-    if (images.length < 3) {
+    if (images.length < 3 || images.length > 6) {
       res.status(400);
-      throw new Error('Se deben enviar mínimo 3 imagenes de evidencia');
-    }
-    if (images.length > 6) {
-      res.status(400);
-      throw new Error('Se deben enviar máximo de 6 imagenes de evidencia');
+      throw new Error('Se deben enviar entre 3 y 6 imagenes de evidencia');
     }
 
     const service = await Service.findById(serviceId).populate([
@@ -94,6 +92,8 @@ const createReceipt = expressAsyncHandler(
       res.status(400);
       throw new Error('Ya hay un recibo creado para este servicio.');
     }
+
+    console.log('Terminan validaciones');
 
     let pdfPath: string | null = null;
     let uploadResult: { url: string; publicId: string } | null = null;
@@ -148,8 +148,12 @@ const createReceipt = expressAsyncHandler(
         receiptData,
       );
 
+      console.log('PDF generado');
+
       // Guardar PDF
       uploadResult = await uploadPdf(pdfPath);
+
+      console.log('Subido a cloudinary');
 
       // Agregar url del PDF con serviceId a la base de datos
       receipt = await Receipt.create({
@@ -157,6 +161,8 @@ const createReceipt = expressAsyncHandler(
         receiptUrl: uploadResult.url,
         publicId: uploadResult.publicId,
       });
+
+      console.log('Creado en la db');
 
       service.status = 'Done';
       service.save();
@@ -169,6 +175,8 @@ const createReceipt = expressAsyncHandler(
         `${service._id}.pdf`,
         isClientAbsent ? secondaryClientName! : service.client,
       );
+
+      console.log('Correo enviado');
 
       res.status(200).json({
         error: false,
