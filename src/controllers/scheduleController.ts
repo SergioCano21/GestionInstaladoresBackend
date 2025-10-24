@@ -282,15 +282,8 @@ const findSchedule = expressAsyncHandler(
               'Error al buscar calendario, no hay tienda del administrador',
             );
           }
-          matchCondition = {
-            $or: [
-              { 'store._id': admin.storeId },
-              {
-                type: 'Block',
-                'installer.storeId': admin.storeId,
-              },
-            ],
-          };
+          matchCondition = { 'installer.storeId': admin.storeId };
+
           break;
         case 'district':
           if (!admin.district) {
@@ -300,6 +293,7 @@ const findSchedule = expressAsyncHandler(
             );
           }
           matchCondition = { 'store.district': admin.district };
+
           break;
         case 'national':
           if (!admin.country) {
@@ -309,6 +303,7 @@ const findSchedule = expressAsyncHandler(
             );
           }
           matchCondition = { 'store.country': admin.country };
+
           break;
         default:
           res.status(400);
