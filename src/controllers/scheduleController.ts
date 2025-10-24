@@ -272,7 +272,9 @@ const findSchedule = expressAsyncHandler(
     const admin = req.admin;
     const installer = req.installer;
 
-    let matchCondition: any = {};
+    let matchCondition: any = {
+      'service.status': { $nin: ['Canceled', 'Done'] },
+    };
     if (admin) {
       switch (admin.role) {
         case 'local':
@@ -282,7 +284,10 @@ const findSchedule = expressAsyncHandler(
               'Error al buscar calendario, no hay tienda del administrador',
             );
           }
-          matchCondition = { 'installer.storeId': admin.storeId };
+          matchCondition = {
+            ...matchCondition,
+            'installer.storeId': admin.storeId,
+          };
 
           break;
         case 'district':
@@ -292,7 +297,10 @@ const findSchedule = expressAsyncHandler(
               'Error al buscar calendario, no se encontró el distrito del administrador',
             );
           }
-          matchCondition = { 'store.district': admin.district };
+          matchCondition = {
+            ...matchCondition,
+            'store.district': admin.district,
+          };
 
           break;
         case 'national':
@@ -302,7 +310,10 @@ const findSchedule = expressAsyncHandler(
               'Error al buscar calendario, no se encontró el país del administrador',
             );
           }
-          matchCondition = { 'store.country': admin.country };
+          matchCondition = {
+            ...matchCondition,
+            'store.country': admin.country,
+          };
 
           break;
         default:
@@ -315,7 +326,7 @@ const findSchedule = expressAsyncHandler(
         throw new Error('Falta el id del instalador');
       }
       matchCondition = {
-        'service.status': { $ne: 'Canceled' },
+        ...matchCondition,
         'installer._id': installer._id,
       };
     }
