@@ -48,6 +48,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
       admin: {
         role: admin.role,
         name: admin.name,
+        storeId: admin.storeId ?? null,
       },
     });
 });
