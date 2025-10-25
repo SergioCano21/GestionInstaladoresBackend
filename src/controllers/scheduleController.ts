@@ -26,7 +26,7 @@ const createSchedule = expressAsyncHandler(
     let installer: mongoose.Types.ObjectId | null = null;
 
     if (type === 'Service') {
-      if (!startTime || !endTime || !date || !serviceId) {
+      if (!startTime || !endTime || !serviceId) {
         res.status(400);
         throw new Error('Faltan datos para agendar el horario');
       }
