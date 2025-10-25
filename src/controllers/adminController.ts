@@ -60,6 +60,7 @@ const validate = expressAsyncHandler(async (req: Request, res: Response) => {
     admin: {
       role: req.admin?.role,
       name: req.admin?.name,
+      storeId: req.admin?.storeId ?? null,
     },
   });
 });
