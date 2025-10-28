@@ -28,8 +28,6 @@ const createReceipt = expressAsyncHandler(
       clientEmail,
     } = data;
 
-    console.log(data);
-
     const files = req.files as Express.Multer.File[];
     const images = await Promise.all(
       files.map(async (file) => {
@@ -89,8 +87,13 @@ const createReceipt = expressAsyncHandler(
 
     const receiptExist = await Receipt.findOne({ serviceId: service._id });
     if (receiptExist) {
-      res.status(400);
-      throw new Error('Ya hay un recibo creado para este servicio.');
+      res.status(409).json({
+        code: 'RECEIPT_ALREADY_EXISTS',
+        message: 'Ya hay un recibo creado para este servicio.',
+        error: true,
+        completed: true,
+      });
+      return;
     }
 
     console.log('Terminan validaciones');
