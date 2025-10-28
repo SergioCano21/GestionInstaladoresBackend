@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import { deletePdf, uploadPdf } from '../services/pdfUpload';
 import sendEmail from '../services/emailService';
 import { ReceiptData } from '../types/models';
+import Schedule from '../models/scheduleModel';
 
 const createReceipt = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -180,6 +181,9 @@ const createReceipt = expressAsyncHandler(
       );
 
       console.log('Correo enviado');
+
+      // Borrar horario del servicio
+      await Schedule.findOneAndDelete({ serviceId: service._id });
 
       res.status(200).json({
         error: false,
