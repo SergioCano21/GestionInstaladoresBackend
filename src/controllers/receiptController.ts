@@ -88,6 +88,9 @@ const createReceipt = expressAsyncHandler(
 
     const receiptExist = await Receipt.findOne({ serviceId: service._id });
     if (receiptExist) {
+      service.status = 'Done';
+      service.save();
+
       res.status(409).json({
         code: 'RECEIPT_ALREADY_EXISTS',
         message: 'Ya hay un recibo creado para este servicio.',
