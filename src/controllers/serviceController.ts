@@ -23,7 +23,7 @@ const createService = expressAsyncHandler(
       client: string;
       clientPhone: string;
       address: string;
-      jobDetails: IJobDetails[];
+      jobDetails: IJobDetails;
       additionalComments: string | null;
       installerId: string;
     } = req.body;
@@ -144,14 +144,8 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
         installerPayment: '$totals.installerPayment',
       },
       jobDetails: {
-        $map: {
-          input: '$jobDetails',
-          as: 'detail',
-          in: {
-            quantity: '$$detail.quantity',
-            description: '$$detail.description',
-          },
-        },
+        quantity: '$jobDetails.quantity',
+        description: '$jobDetails.description',
       },
     };
   }
@@ -236,7 +230,7 @@ const updateService = expressAsyncHandler(
       client: string;
       clientPhone: string;
       address: string;
-      jobDetails: IJobDetails[];
+      jobDetails: IJobDetails;
       additionalComments: string | null;
       installerId: string;
       status: Status;

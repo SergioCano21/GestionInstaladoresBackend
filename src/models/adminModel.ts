@@ -1,5 +1,6 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import { IAdmin } from '../types/models';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const AdminSchema: Schema = new Schema<IAdmin>(
   {
@@ -27,7 +28,7 @@ const AdminSchema: Schema = new Schema<IAdmin>(
     },
     role: {
       type: String,
-      enum: ['local', 'district', 'national'],
+      enum: Object.values(ROLE_OPTIONS),
       required: true,
     },
     district: {

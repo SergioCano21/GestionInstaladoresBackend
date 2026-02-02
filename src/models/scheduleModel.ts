@@ -1,5 +1,6 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import { ISchedule } from '../types/models';
+import { SCHEDULE_OPTIONS } from '../constants/schedule';
 
 const ScheduleSchema: Schema<ISchedule> = new Schema(
   {
@@ -21,7 +22,7 @@ const ScheduleSchema: Schema<ISchedule> = new Schema(
     },
     type: {
       type: String,
-      enum: ['Service', 'Block'],
+      enum: Object.values(SCHEDULE_OPTIONS),
       required: true,
     },
     description: {

@@ -1,5 +1,6 @@
 import mongoose, { Model, Schema } from 'mongoose';
 import { IService } from '../types/models';
+import { STATUS_OPTIONS } from '../constants/service';
 
 const ServiceSchema: Schema<IService> = new Schema(
   {
@@ -21,9 +22,8 @@ const ServiceSchema: Schema<IService> = new Schema(
       required: true,
     },
     jobDetails: {
-      type: [
+      type: new Schema(
         {
-          _id: false,
           quantity: {
             type: Number,
             required: true,
@@ -45,7 +45,8 @@ const ServiceSchema: Schema<IService> = new Schema(
             required: true,
           },
         },
-      ],
+        { _id: false },
+      ),
       required: true,
     },
     subtotals: {
@@ -128,7 +129,7 @@ const ServiceSchema: Schema<IService> = new Schema(
     },
     status: {
       type: String,
-      enum: ['To Do', 'Doing', 'Done', 'Canceled'],
+      enum: Object.values(STATUS_OPTIONS),
       required: true,
     },
     deleted: {

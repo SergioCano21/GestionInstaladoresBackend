@@ -61,7 +61,7 @@ export interface IService {
   client: string;
   clientPhone: string;
   address: string;
-  jobDetails: IJobDetails[];
+  jobDetails: IJobDetails;
   subtotals: IFeeBreakdown;
   iva: IFeeBreakdown;
   totals: IFeeBreakdown;
@@ -117,7 +117,7 @@ export interface ReceiptData {
   startTime: string;
   endTime: string;
   installerName: string;
-  installedProduct: IInstalledProduct[];
+  installedProduct: IInstalledProduct;
   recommendations: string;
   clientComments: string;
   clientSignature: string;

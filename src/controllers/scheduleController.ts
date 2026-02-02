@@ -6,6 +6,7 @@ import mongoose from 'mongoose';
 import Service from '../models/serviceModel';
 import { SCHEDULE_OPTIONS } from '../constants/schedule';
 import { STATUS_OPTIONS } from '../constants/service';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const createSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -282,7 +283,7 @@ const findSchedule = expressAsyncHandler(
     };
     if (admin) {
       switch (admin.role) {
-        case 'local':
+        case ROLE_OPTIONS.LOCAL:
           if (!admin.storeId) {
             res.status(400);
             throw new Error(
@@ -295,7 +296,7 @@ const findSchedule = expressAsyncHandler(
           };
 
           break;
-        case 'district':
+        case ROLE_OPTIONS.DISTRICT:
           if (!admin.district) {
             res.status(400);
             throw new Error(
@@ -308,7 +309,7 @@ const findSchedule = expressAsyncHandler(
           };
 
           break;
-        case 'national':
+        case ROLE_OPTIONS.NATIONAL:
           if (!admin.country) {
             res.status(400);
             throw new Error(
