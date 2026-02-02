@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import expressAsyncHandler from 'express-async-handler';
 import Service from '../models/serviceModel';
-import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
+import { IJobDetails, Status } from '../types/models';
 import mongoose from 'mongoose';
 import Schedule from '../models/scheduleModel';
 import { STATUS_GROUPS, STATUS_OPTIONS } from '../constants/service';
 import { ROLE_OPTIONS } from '../constants/admin';
+import { calculateFees } from '../utils/feeCalculator';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -49,41 +50,12 @@ const createService = expressAsyncHandler(
       throw new Error('Ya existe un servicio registrado con ese folio');
     }
 
-    let installationServiceFee: number = 0;
-    let commissionFee: number = 0;
-    let installerPayment: number = 0;
-
-    jobDetails.forEach((jobDetail) => {
-      jobDetail.commissionFee =
-        Math.floor(jobDetail.installationServiceFee * 0.2 * 100) / 100;
-      jobDetail.installerPayment =
-        jobDetail.installationServiceFee - jobDetail.commissionFee;
-
-      installationServiceFee += jobDetail.installationServiceFee;
-      commissionFee += jobDetail.commissionFee;
-      installerPayment += jobDetail.installerPayment;
-    });
-
-    const subtotals: IFeeBreakdown = {
-      installationServiceFee,
-      commissionFee,
-      installerPayment,
-    };
-
-    const iva: IFeeBreakdown = {
-      installationServiceFee: Number(
-        (subtotals.installationServiceFee * 0.16).toFixed(2),
-      ),
-      commissionFee: Number((subtotals.commissionFee * 0.16).toFixed(2)),
-      installerPayment: Number((subtotals.installerPayment * 0.16).toFixed(2)),
-    };
-
-    const totals: IFeeBreakdown = {
-      installationServiceFee:
-        subtotals.installationServiceFee + iva.installationServiceFee,
-      commissionFee: subtotals.commissionFee + iva.commissionFee,
-      installerPayment: subtotals.installerPayment + iva.installerPayment,
-    };
+    const {
+      jobDetails: calculatedJobDetails,
+      subtotals,
+      iva,
+      totals,
+    } = calculateFees(jobDetails);
 
     const status: Status = STATUS_OPTIONS.TODO;
 
@@ -92,7 +64,7 @@ const createService = expressAsyncHandler(
       client,
       clientPhone,
       address,
-      jobDetails,
+      jobDetails: calculatedJobDetails,
       subtotals,
       iva,
       totals,
@@ -302,45 +274,14 @@ const updateService = expressAsyncHandler(
     if (status && status !== service.status) service.status = status;
 
     if (jobDetails && jobDetails !== service.jobDetails) {
-      let installationServiceFee: number = 0;
-      let commissionFee: number = 0;
-      let installerPayment: number = 0;
+      const {
+        jobDetails: calculatedJobDetails,
+        subtotals,
+        iva,
+        totals,
+      } = calculateFees(jobDetails);
 
-      jobDetails.forEach((jobDetail: IJobDetails) => {
-        jobDetail.commissionFee =
-          Math.floor(jobDetail.installationServiceFee * 0.2 * 100) / 100;
-        jobDetail.installerPayment =
-          jobDetail.installationServiceFee - jobDetail.commissionFee;
-
-        installationServiceFee += jobDetail.installationServiceFee;
-        commissionFee += jobDetail.commissionFee;
-        installerPayment += jobDetail.installerPayment;
-      });
-
-      const subtotals: IFeeBreakdown = {
-        installationServiceFee,
-        commissionFee,
-        installerPayment,
-      };
-
-      const iva: IFeeBreakdown = {
-        installationServiceFee: Number(
-          (subtotals.installationServiceFee * 0.16).toFixed(2),
-        ),
-        commissionFee: Number((subtotals.commissionFee * 0.16).toFixed(2)),
-        installerPayment: Number(
-          (subtotals.installerPayment * 0.16).toFixed(2),
-        ),
-      };
-
-      const totals: IFeeBreakdown = {
-        installationServiceFee:
-          subtotals.installationServiceFee + iva.installationServiceFee,
-        commissionFee: subtotals.commissionFee + iva.commissionFee,
-        installerPayment: subtotals.installerPayment + iva.installerPayment,
-      };
-
-      service.jobDetails = jobDetails;
+      service.jobDetails = calculatedJobDetails;
       service.subtotals = subtotals;
       service.iva = iva;
       service.totals = totals;
