@@ -5,6 +5,7 @@ import Installer from '../models/installerModel';
 import { IStore } from '../types/models';
 import Store from '../models/storeModel';
 import jwt from 'jsonwebtoken';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const login = expressAsyncHandler(async (req: Request, res: Response) => {
   const { installerId, password }: { installerId: number; password: string } =
@@ -226,13 +227,13 @@ const findInstallers = expressAsyncHandler(
     let storeQuery: Partial<IStore> = { deleted: false };
 
     switch (admin.role) {
-      case 'national':
+      case ROLE_OPTIONS.NATIONAL:
         storeQuery.country = admin.country ?? '';
         break;
-      case 'district':
+      case ROLE_OPTIONS.DISTRICT:
         storeQuery.district = admin.district ?? '';
         break;
-      case 'local':
+      case ROLE_OPTIONS.LOCAL:
         if (!admin.storeId) {
           res.status(400);
           throw new Error('No se encontró tienda para este administrador');

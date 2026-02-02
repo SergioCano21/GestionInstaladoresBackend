@@ -1,5 +1,8 @@
 import { Request } from 'express';
 import { Types } from 'mongoose';
+import { ROLE_OPTIONS } from '../constants/admin';
+import { STATUS_OPTIONS } from '../constants/service';
+import { SCHEDULE_OPTIONS } from '../constants/schedule';
 
 export interface IStore {
   _id: Types.ObjectId;
@@ -95,11 +98,12 @@ export interface IInstalledProduct {
   serialNumber?: string;
 }
 
-export type ScheduleEntryType = 'Service' | 'Block';
+export type ScheduleEntryType =
+  (typeof SCHEDULE_OPTIONS)[keyof typeof SCHEDULE_OPTIONS];
 
-export type Role = 'local' | 'district' | 'national';
+export type Role = (typeof ROLE_OPTIONS)[keyof typeof ROLE_OPTIONS];
 
-export type Status = 'To Do' | 'Doing' | 'Done' | 'Canceled';
+export type Status = (typeof STATUS_OPTIONS)[keyof typeof STATUS_OPTIONS];
 
 export interface AdminRequest extends Request {
   admin: IAdmin;

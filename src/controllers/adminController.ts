@@ -5,6 +5,8 @@ import { compare, genSalt, hash } from 'bcryptjs';
 import { IAdmin } from '../types/models';
 import jwt from 'jsonwebtoken';
 import Store from '../models/storeModel';
+import { ACCESS_TOKEN } from '../constants/auth';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const login = expressAsyncHandler(async (req: Request, res: Response) => {
   const { username, password }: { username: string; password: string } =
@@ -36,7 +38,7 @@ const login = expressAsyncHandler(async (req: Request, res: Response) => {
   );
   res
     .status(200)
-    .cookie('access_token', newToken, {
+    .cookie(ACCESS_TOKEN, newToken, {
       httpOnly: true,
       sameSite: 'none',
       secure: true,
@@ -66,7 +68,7 @@ const validate = expressAsyncHandler(async (req: Request, res: Response) => {
 });
 
 const logout = expressAsyncHandler(async (_req: Request, res: Response) => {
-  res.status(200).clearCookie('access_token').json({
+  res.status(200).clearCookie(ACCESS_TOKEN).json({
     message: 'Logout realizado con éxito',
     error: false,
   });
@@ -84,7 +86,7 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     throw new Error('Falta ingresar datos del administrador');
   }
 
-  if (role === 'local') {
+  if (role === ROLE_OPTIONS.LOCAL) {
     if (!storeId) {
       res.status(400);
       throw new Error(
@@ -100,14 +102,14 @@ const createAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     country = store.country;
   }
 
-  if (role === 'district' && !district && !country) {
+  if (role === ROLE_OPTIONS.DISTRICT && !district && !country) {
     res.status(400);
     throw new Error(
       'Falta agregar el distrito y país al que se está registrando el administrador',
     );
   }
 
-  if (role === 'national' && !country) {
+  if (role === ROLE_OPTIONS.NATIONAL && !country) {
     res.status(400);
     throw new Error(
       'Falta agregar el país al que se está registrando el administrador',
@@ -217,7 +219,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
   if (district) admin.district = district;
   if (country) admin.country = country;
 
-  if (admin.role === 'national') {
+  if (admin.role === ROLE_OPTIONS.NATIONAL) {
     if (!admin.country) {
       res.status(400);
       throw new Error('Falta agregar país para cambiar de rol');
@@ -226,7 +228,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     admin.storeId = undefined;
   }
 
-  if (admin.role === 'district') {
+  if (admin.role === ROLE_OPTIONS.DISTRICT) {
     if (!admin.district || !admin.country) {
       res.status(400);
       throw new Error('Falta agregar distrito y país para cambiar de rol');
@@ -234,7 +236,7 @@ const updateAdmin = expressAsyncHandler(async (req: Request, res: Response) => {
     admin.storeId = undefined;
   }
 
-  if (admin.role === 'local') {
+  if (admin.role === ROLE_OPTIONS.LOCAL) {
     if (!admin.storeId) {
       res.status(400);
       throw new Error('Falta agregar tienda para cambiar de rol');
@@ -283,21 +285,21 @@ const findAdmins = expressAsyncHandler(async (req: Request, res: Response) => {
   let adminQuery: Partial<IAdmin> = {};
 
   switch (admin.role) {
-    case 'national':
+    case ROLE_OPTIONS.NATIONAL:
       if (!admin.country) {
         res.status(400);
         throw new Error('Faltan datos para la busqueda');
       }
       adminQuery.country = admin.country;
       break;
-    case 'district':
+    case ROLE_OPTIONS.DISTRICT:
       if (!admin.district) {
         res.status(400);
         throw new Error('Faltan datos para la busqueda');
       }
       adminQuery.district = admin.district;
       break;
-    case 'local':
+    case ROLE_OPTIONS.LOCAL:
       if (!admin.storeId) {
         res.status(400);
         throw new Error('No se encontró tienda para este administrador');

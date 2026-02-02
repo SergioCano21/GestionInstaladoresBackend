@@ -8,6 +8,7 @@ import fs from 'fs/promises';
 import { deletePdf, uploadPdf } from '../services/pdfUpload';
 import sendEmail from '../services/emailService';
 import { ReceiptData } from '../types/models';
+import { STATUS_OPTIONS } from '../constants/service';
 
 const createReceipt = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -87,7 +88,7 @@ const createReceipt = expressAsyncHandler(
 
     const receiptExist = await Receipt.findOne({ serviceId: service._id });
     if (receiptExist) {
-      service.status = 'Done';
+      service.status = STATUS_OPTIONS.DONE;
       service.save();
 
       res.status(409).json({
@@ -170,7 +171,7 @@ const createReceipt = expressAsyncHandler(
 
       console.log('Creado en la db');
 
-      service.status = 'Done';
+      service.status = STATUS_OPTIONS.DONE;
       service.save();
 
       // Enviar correo al cliente con PDF

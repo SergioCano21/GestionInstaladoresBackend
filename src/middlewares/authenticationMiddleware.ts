@@ -3,6 +3,7 @@ import expressAsyncHandler from 'express-async-handler';
 import jwt from 'jsonwebtoken';
 import Admin from '../models/adminModel';
 import Installer from '../models/installerModel';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const protect = expressAsyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -81,7 +82,7 @@ const isAdmin = expressAsyncHandler(
 
 const isRoleLocal = expressAsyncHandler(
   (req: Request, res: Response, next: NextFunction) => {
-    if (req.admin?.role != 'local') {
+    if (req.admin?.role !== ROLE_OPTIONS.LOCAL) {
       res.status(401);
       throw new Error(
         'Solo administradores con rol local pueden realizar modificaciones',
@@ -93,7 +94,7 @@ const isRoleLocal = expressAsyncHandler(
 
 const isRoleDistrictOrNational = expressAsyncHandler(
   (req: Request, res: Response, next: NextFunction) => {
-    if (req.admin?.role == 'local') {
+    if (req.admin?.role === ROLE_OPTIONS.LOCAL) {
       res.status(401);
       throw new Error(
         'Solo administradores con rol distrito o nacional pueden realizar modificaciones',
@@ -105,7 +106,7 @@ const isRoleDistrictOrNational = expressAsyncHandler(
 
 const isRoleLocalAndInstaller = expressAsyncHandler(
   (req: Request, res: Response, next: NextFunction) => {
-    if (req.admin?.role != 'local' && !req.installer) {
+    if (req.admin?.role !== ROLE_OPTIONS.LOCAL && !req.installer) {
       res.status(401);
       throw new Error(
         'Solo administradores con rol local o instaladores pueden realizar modificaciones',

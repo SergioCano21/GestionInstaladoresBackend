@@ -4,6 +4,8 @@ import { ScheduleEntryType } from '../types/models';
 import Schedule from '../models/scheduleModel';
 import mongoose from 'mongoose';
 import Service from '../models/serviceModel';
+import { SCHEDULE_OPTIONS } from '../constants/schedule';
+import { STATUS_OPTIONS } from '../constants/service';
 
 const createSchedule = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -25,7 +27,7 @@ const createSchedule = expressAsyncHandler(
 
     let installer: mongoose.Types.ObjectId | null = null;
 
-    if (type === 'Service') {
+    if (type === SCHEDULE_OPTIONS.SERVICE) {
       if (!startTime || !endTime || !serviceId) {
         res.status(400);
         throw new Error('Faltan datos para agendar el horario');
@@ -48,7 +50,7 @@ const createSchedule = expressAsyncHandler(
       }
 
       installer = service.installerId;
-    } else if (type === 'Block') {
+    } else if (type === SCHEDULE_OPTIONS.BLOCK) {
       if (!startTime || !endTime) {
         res.status(400);
         throw new Error('Faltan datos para apartar el horario');
@@ -107,9 +109,9 @@ const createSchedule = expressAsyncHandler(
       startTime: startDateTime,
       endTime: endDateTime,
       type,
-      ...(type === 'Service' && { serviceId }),
-      ...(type === 'Block' && { installerId: installer }),
-      ...(type === 'Block' && description && { description }),
+      ...(type === SCHEDULE_OPTIONS.SERVICE && { serviceId }),
+      ...(type === SCHEDULE_OPTIONS.BLOCK && { installerId: installer }),
+      ...(type === SCHEDULE_OPTIONS.BLOCK && description && { description }),
     });
 
     res.status(201).json({
@@ -152,8 +154,9 @@ const updateSchedule = expressAsyncHandler(
 
     let installer: mongoose.Types.ObjectId;
 
-    if (type === 'Service') installer = (schedule.serviceId as any).installerId;
-    else if (type === 'Block') installer = schedule.installerId;
+    if (type === SCHEDULE_OPTIONS.SERVICE)
+      installer = (schedule.serviceId as any).installerId;
+    else if (type === SCHEDULE_OPTIONS.BLOCK) installer = schedule.installerId;
     else {
       res.status(400);
       throw new Error('Error en el tipo de horario');
@@ -200,7 +203,7 @@ const updateSchedule = expressAsyncHandler(
     if (description !== undefined && description !== schedule.description)
       schedule.description = description;
 
-    if (type === 'Service') {
+    if (type === SCHEDULE_OPTIONS.SERVICE) {
       const duplicateSchedule = await Schedule.findOne({
         serviceId: schedule.serviceId,
         _id: { $ne: schedule._id },
@@ -273,7 +276,9 @@ const findSchedule = expressAsyncHandler(
     const installer = req.installer;
 
     let matchCondition: any = {
-      'service.status': { $nin: ['Canceled', 'Done'] },
+      'service.status': {
+        $nin: [STATUS_OPTIONS.CANCELED, STATUS_OPTIONS.DONE],
+      },
     };
     if (admin) {
       switch (admin.role) {

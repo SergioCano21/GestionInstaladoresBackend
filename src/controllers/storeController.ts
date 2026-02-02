@@ -3,6 +3,7 @@ import { Request, Response } from 'express';
 import Store from '../models/storeModel';
 import { IStore } from '../types/models';
 import { HydratedDocument } from 'mongoose';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const createStore = expressAsyncHandler(async (req: Request, res: Response) => {
   const {
@@ -91,13 +92,13 @@ const findStores = expressAsyncHandler(async (req: Request, res: Response) => {
     let query: Partial<IStore> = {};
 
     switch (admin.role) {
-      case 'national':
+      case ROLE_OPTIONS.NATIONAL:
         query.country = admin.country ?? '';
         break;
-      case 'district':
+      case ROLE_OPTIONS.DISTRICT:
         query.district = admin.district ?? '';
         break;
-      case 'local':
+      case ROLE_OPTIONS.LOCAL:
         query._id = admin.storeId;
         break;
       default:

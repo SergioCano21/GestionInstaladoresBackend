@@ -4,6 +4,8 @@ import Service from '../models/serviceModel';
 import { IFeeBreakdown, IJobDetails, Status } from '../types/models';
 import mongoose from 'mongoose';
 import Schedule from '../models/scheduleModel';
+import { STATUS_GROUPS, STATUS_OPTIONS } from '../constants/service';
+import { ROLE_OPTIONS } from '../constants/admin';
 
 const createService = expressAsyncHandler(
   async (req: Request, res: Response) => {
@@ -83,7 +85,7 @@ const createService = expressAsyncHandler(
       installerPayment: subtotals.installerPayment + iva.installerPayment,
     };
 
-    const status: Status = 'To Do';
+    const status: Status = STATUS_OPTIONS.TODO;
 
     const newService = await Service.create({
       folio,
@@ -114,14 +116,14 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
   const admin = req.admin;
   const installer = req.installer;
 
-  if (!status || (status !== 'active' && status !== 'completed')) {
+  if (!status || !Object.values(STATUS_GROUPS).includes(status as any)) {
     res.status(400);
     throw new Error('Error al pasar el status como parametro');
   }
 
   let statusMap: any = {
-    active: ['To Do', 'Doing'],
-    completed: ['Done', 'Canceled'],
+    [STATUS_GROUPS.ACTIVE]: [STATUS_OPTIONS.TODO, STATUS_OPTIONS.DOING],
+    [STATUS_GROUPS.COMPLETED]: [STATUS_OPTIONS.DONE, STATUS_OPTIONS.CANCELED],
   };
 
   let projectStage: any = {
@@ -158,10 +160,7 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     };
   }
   if (installer) {
-    statusMap = {
-      ...statusMap,
-      completed: ['Done'],
-    };
+    statusMap[STATUS_GROUPS.COMPLETED] = [STATUS_OPTIONS.DONE];
 
     projectStage = {
       ...projectStage,
@@ -190,7 +189,7 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     {
       $match: {
         deleted: false,
-        status: { $in: statusMap[status] },
+        status: { $in: statusMap[status as any] },
       },
     },
 
@@ -217,11 +216,11 @@ const findService = expressAsyncHandler(async (req: Request, res: Response) => {
     { $unwind: '$store' },
 
     // Second filter based on role
-    ...(admin?.role === 'district'
+    ...(admin?.role === ROLE_OPTIONS.DISTRICT
       ? [{ $match: { 'store.district': admin.district } }]
-      : admin?.role === 'national'
+      : admin?.role === ROLE_OPTIONS.NATIONAL
         ? [{ $match: { 'store.country': admin.country } }]
-        : admin?.role === 'local'
+        : admin?.role === ROLE_OPTIONS.LOCAL
           ? [{ $match: { storeId: admin.storeId } }]
           : installer
             ? [{ $match: { installerId: installer._id } }]
@@ -363,11 +362,11 @@ const deleteService = expressAsyncHandler(
 
     const deletedService = await Service.findOneAndUpdate(
       { _id: id },
-      { status: 'Canceled' },
+      { status: STATUS_OPTIONS.CANCELED },
       { new: true },
     );
 
-    if (!deletedService || deletedService.status !== 'Canceled') {
+    if (!deletedService || deletedService.status !== STATUS_OPTIONS.CANCELED) {
       res.status(400);
       throw new Error('Error al intentar eliminar el servicio');
     }
@@ -388,11 +387,11 @@ const restoreService = expressAsyncHandler(
 
     const restoredService = await Service.findOneAndUpdate(
       { _id: id },
-      { status: 'To Do' },
+      { status: STATUS_OPTIONS.TODO },
       { new: true },
     );
 
-    if (!restoredService || restoredService.status !== 'To Do') {
+    if (!restoredService || restoredService.status !== STATUS_OPTIONS.TODO) {
       res.status(400);
       throw new Error('Error al intentar restaurar el servicio');
     }
