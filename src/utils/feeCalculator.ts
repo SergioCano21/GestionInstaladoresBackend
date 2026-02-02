@@ -1,8 +1,10 @@
 import { IFeeBreakdown, IJobDetails } from '../types/models';
 
 const IVA_RATE = 0.16;
+const COMMISSION_RATE = 0.2;
 
-const round2 = (n: number) => Math.floor(n * 100) / 100;
+const floor2 = (n: number) => Math.floor(n * 100) / 100;
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function calculateFees(jobDetails: IJobDetails[]) {
   let installationServiceFee = 0;
@@ -10,7 +12,9 @@ export function calculateFees(jobDetails: IJobDetails[]) {
   let installerPayment = 0;
 
   const updatedJobDetails = jobDetails.map((jobDetail) => {
-    const commission = round2(jobDetail.installationServiceFee * 0.2);
+    const commission = floor2(
+      jobDetail.installationServiceFee * COMMISSION_RATE,
+    );
 
     const installerPay = jobDetail.installationServiceFee - commission;
 
@@ -25,24 +29,23 @@ export function calculateFees(jobDetails: IJobDetails[]) {
     };
   });
 
-  const totals: IFeeBreakdown = {
-    installationServiceFee,
-    commissionFee,
-    installerPayment,
-  };
-
   const subtotals: IFeeBreakdown = {
-    installationServiceFee: round2(
-      totals.installationServiceFee / (1 + IVA_RATE),
-    ),
-    commissionFee: round2(totals.commissionFee / (1 + IVA_RATE)),
-    installerPayment: round2(totals.installerPayment / (1 + IVA_RATE)),
+    installationServiceFee: floor2(installationServiceFee / (1 + IVA_RATE)),
+    commissionFee: floor2(commissionFee / (1 + IVA_RATE)),
+    installerPayment: floor2(installerPayment / (1 + IVA_RATE)),
   };
 
   const iva: IFeeBreakdown = {
     installationServiceFee: round2(subtotals.installationServiceFee * IVA_RATE),
     commissionFee: round2(subtotals.commissionFee * IVA_RATE),
     installerPayment: round2(subtotals.installerPayment * IVA_RATE),
+  };
+
+  const totals: IFeeBreakdown = {
+    installationServiceFee:
+      subtotals.installationServiceFee + iva.installationServiceFee,
+    commissionFee: subtotals.commissionFee + iva.commissionFee,
+    installerPayment: subtotals.installerPayment + iva.commissionFee,
   };
 
   return {
