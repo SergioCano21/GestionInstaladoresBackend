@@ -7,24 +7,15 @@ const floor2 = (n: number) => Math.floor(n * 100) / 100;
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export function calculateFees(jobDetails: IJobDetails) {
-  const commissionFee = floor2(
-    jobDetails.installationServiceFee * COMMISSION_RATE,
+  const subtotalServiceFee = round2(
+    jobDetails.installationServiceFee / (1 + IVA_RATE),
   );
-
-  const installerPayment = jobDetails.installationServiceFee - commissionFee;
-
-  const updatedJobDetails: IJobDetails = {
-    ...jobDetails,
-    commissionFee,
-    installerPayment,
-  };
+  const subtotalComissionFee = floor2(subtotalServiceFee * COMMISSION_RATE);
 
   const subtotals: IFeeBreakdown = {
-    installationServiceFee: floor2(
-      jobDetails.installationServiceFee / (1 + IVA_RATE),
-    ),
-    commissionFee: floor2(jobDetails.commissionFee / (1 + IVA_RATE)),
-    installerPayment: floor2(jobDetails.installerPayment / (1 + IVA_RATE)),
+    installationServiceFee: subtotalServiceFee,
+    commissionFee: subtotalComissionFee,
+    installerPayment: subtotalServiceFee - subtotalComissionFee,
   };
 
   const iva: IFeeBreakdown = {
@@ -34,10 +25,15 @@ export function calculateFees(jobDetails: IJobDetails) {
   };
 
   const totals: IFeeBreakdown = {
-    installationServiceFee:
-      subtotals.installationServiceFee + iva.installationServiceFee,
+    installationServiceFee: jobDetails.installationServiceFee,
     commissionFee: subtotals.commissionFee + iva.commissionFee,
     installerPayment: subtotals.installerPayment + iva.installerPayment,
+  };
+
+  const updatedJobDetails: IJobDetails = {
+    ...jobDetails,
+    commissionFee: totals.commissionFee,
+    installerPayment: totals.installerPayment,
   };
 
   return {
